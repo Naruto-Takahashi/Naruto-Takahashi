@@ -52,6 +52,15 @@ def text(x, y, cls, value, anchor=None, weight=None):
     return f'<text x="{x}" y="{y}" class="{cls}"{attrs}>{esc(value)}</text>'
 
 
+def cmd_prompt(x, y, cmd):
+    # Starship の character モジュール (secondary色の ❯) を模した実行済みコマンド行
+    return (
+        f'<text x="{x}" y="{y}" class="cmdline">'
+        f'<tspan class="promptchar" font-weight="bold">&#10095;</tspan> {esc(cmd)}'
+        f'</text>'
+    )
+
+
 def status_class(status):
     return {
         "RUNNING": "green",
@@ -79,7 +88,7 @@ y += 26
 rows.append(text(LEFT, y, "dim", "-" * 78))
 
 y += 36
-rows.append(text(LEFT, y, "prompt", "$ whoami"))
+rows.append(cmd_prompt(LEFT, y, "whoami"))
 for key, value in [
     ("Role", identity.get("role", "")),
     ("University", identity.get("university", "")),
@@ -90,7 +99,7 @@ for key, value in [
     rows.append(text(LEFT, y, "mono", f"{key:<11} {value}"))
 
 y += 40
-rows.append(text(LEFT, y, "prompt", "$ research --current"))
+rows.append(cmd_prompt(LEFT, y, "research --current"))
 for item in research.get("current", []):
     y += LINE_H
     status = item.get("status", "").upper()
@@ -100,20 +109,20 @@ for item in research.get("current", []):
 description = research.get("description", [])
 if description:
     y += 40
-    rows.append(text(LEFT, y, "prompt", "$ cat research.txt"))
+    rows.append(cmd_prompt(LEFT, y, "cat research.txt"))
     for line in description:
         y += LINE_H
         rows.append(text(LEFT, y, "mono", line))
 
 if stack:
     y += 40
-    rows.append(text(LEFT, y, "prompt", "$ stack --list"))
+    rows.append(cmd_prompt(LEFT, y, "stack --list"))
     y += 28
     rows.append(text(LEFT, y, "mono", " · ".join(stack)))
 
 if systems:
     y += 40
-    rows.append(text(LEFT, y, "prompt", "$ env --list"))
+    rows.append(cmd_prompt(LEFT, y, "env --list"))
     y += 28
     rows.append(text(LEFT, y, "mono", f'{"OS":<8} {" · ".join(systems.get("os", []))}'))
     y += LINE_H
@@ -123,7 +132,7 @@ if systems:
 
 if projects:
     y += 40
-    rows.append(text(LEFT, y, "prompt", "$ projects --active"))
+    rows.append(cmd_prompt(LEFT, y, "projects --active"))
     y += 28
     rows.append(text(LEFT, y, "dim", f'{"PID":<5} {"PROJECT":<31} STATUS'))
     for project in projects:
@@ -213,7 +222,8 @@ svg = f"""<svg width="{WIDTH}" height="{height}" viewBox="0 0 {WIDTH} {height}" 
     .border {{ stroke: {BORDER}; stroke-width: 1.5; }}
     .mono {{ font-size: 14px; fill: {FG}; }}
     .title {{ font-size: 16px; font-weight: 700; fill: {ACCENT}; }}
-    .prompt {{ font-size: 14px; font-weight: 700; fill: {DRAGON_GREEN}; }}
+    .cmdline {{ font-size: 14px; fill: {FG}; }}
+    .promptchar {{ fill: {SECONDARY}; }}
     .dim {{ font-size: 14px; fill: {DIM}; }}
     .green {{ font-size: 14px; fill: {DRAGON_GREEN}; }}
     .yellow {{ font-size: 14px; fill: {DRAGON_YELLOW}; }}
