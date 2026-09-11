@@ -76,7 +76,7 @@ y = 74
 
 rows.append(text(LEFT, y, "title", f'{identity["username"]}@{identity["terminal_host"]}'))
 y += 26
-rows.append(text(LEFT, y, "dim", "─" * 78))
+rows.append(text(LEFT, y, "dim", "-" * 78))
 
 y += 36
 rows.append(text(LEFT, y, "prompt", "$ whoami"))
@@ -134,80 +134,77 @@ if projects:
         ))
 
 body_bottom = y + 30
-cursor_y = y - 14
 
 # --- Starship 風 powerline プロンプト (下部バー) ---
 # セグメント構成: nixcli_badge(tertiary) -> directory(accent) -> git_branch/status(dark) -> character
-PROMPT_H = 40
-prompt_y_top = body_bottom + 16
-prompt_baseline = prompt_y_top + 26
+PROMPT_H = 32
+prompt_y_top = body_bottom + 14
+prompt_baseline = prompt_y_top + PROMPT_H / 2 + 5
 bar_bottom = prompt_y_top + PROMPT_H
 
 badge_text = f' {prompt.get("badge", "")} '
 dir_text = f' {prompt.get("path", "")} '
 git_text = f' {prompt.get("branch", "")} '
 
+CHAR_W = 6.6
+PAD = 6
+ARROW_W = 10  # powerline矢印の突き出し幅
+
 def seg_width(s):
-    return int(len(s) * 8.6) + 20
+    return round(len(s) * CHAR_W) + PAD * 2
 
-x = LEFT
-segs = []
+# セグメント定義: (表示文字, 背景色, 文字色)
+segments = [
+    (badge_text, TERTIARY, ON_ACCENT),
+    (dir_text, ACCENT, ON_ACCENT),
+    (git_text, DARK, ACCENT),
+]
 
-w1 = seg_width(badge_text)
-segs.append(("rect", x, w1, TERTIARY))
-segs.append(("text", x + w1 / 2, badge_text, ON_ACCENT, "bold"))
-x += w1
-segs.append(("tri", x, TERTIARY, ACCENT))
+seg_x = LEFT
+rect_svg = []
+arrow_svg = []
+seg_text_svg = []
+bounds = []
+for value, bg_color, fg_color in segments:
+    w = seg_width(value)
+    rect_svg.append(f'<rect x="{seg_x}" y="{prompt_y_top}" width="{w}" height="{PROMPT_H}" fill="{bg_color}"/>')
+    seg_text_svg.append(
+        f'<text x="{seg_x + w/2}" y="{prompt_baseline}" class="promptseg" '
+        f'text-anchor="middle" fill="{fg_color}" font-weight="bold">{esc(value)}</text>'
+    )
+    bounds.append(seg_x + w)
+    seg_x += w
 
-w2 = seg_width(dir_text)
-segs.append(("rect", x, w2, ACCENT))
-segs.append(("text", x + w2 / 2, dir_text, ON_ACCENT, "bold"))
-x += w2
-segs.append(("tri", x, ACCENT, DARK))
+# powerline矢印: 各セグメント境界に、手前の色で右向き三角形を重ね描きする
+# (先に全セグメントのrectを描画してから矢印を上に重ねることで、次のセグメントに
+#  食い込む矢印が隠れずに見える)
+for boundary, (_, bg_color, _) in zip(bounds, segments):
+    th = PROMPT_H / 2
+    arrow_svg.append(
+        f'<polygon points="{boundary},{prompt_y_top} {boundary+ARROW_W},{prompt_y_top+th} '
+        f'{boundary},{bar_bottom}" fill="{bg_color}"/>'
+    )
 
-w3 = seg_width(git_text)
-segs.append(("rect", x, w3, DARK))
-segs.append(("text", x + w3 / 2, f" {git_text}", ACCENT, "normal"))
-x += w3
-segs.append(("tri", x, DARK, BG))
-
-prompt_svg = []
-for seg in segs:
-    if seg[0] == "rect":
-        _, sx, sw, color = seg
-        prompt_svg.append(
-            f'<rect x="{sx}" y="{prompt_y_top}" width="{sw}" height="{PROMPT_H}" fill="{color}"/>'
-        )
-    elif seg[0] == "text":
-        _, cx, value, color, weight = seg
-        prompt_svg.append(
-            f'<text x="{cx}" y="{prompt_baseline}" class="promptseg" '
-            f'text-anchor="middle" fill="{color}" font-weight="{weight}">{esc(value)}</text>'
-        )
-    elif seg[0] == "tri":
-        _, tx, from_color, to_color = seg
-        th = PROMPT_H / 2
-        prompt_svg.append(
-            f'<polygon points="{tx},{prompt_y_top} {tx+14},{prompt_y_top+th} {tx},{bar_bottom}" '
-            f'fill="{from_color}"/>'
-        )
-
-arrow_x = x + 16
+arrow_x = seg_x + ARROW_W + 10
+prompt_svg = rect_svg + arrow_svg + seg_text_svg
 prompt_svg.append(
     f'<text x="{arrow_x}" y="{prompt_baseline}" class="promptseg" fill="{SECONDARY}" '
-    f'font-weight="bold">❯</text>'
+    f'font-weight="bold">&#10095;</text>'
 )
 prompt_svg.append(
-    f'<rect x="{arrow_x + 22}" y="{prompt_baseline - 15}" width="8" height="17" rx="1" class="cursor"/>'
+    f'<rect x="{arrow_x + 16}" y="{prompt_baseline - 13}" width="7" height="15" rx="1" class="cursor"/>'
 )
 
 height = bar_bottom + 26
 
-# --- タブバー (WezTerm 風の平行四辺形タブ) ---
-TAB_H = 34
-tab_label = " zsh "
-tab_w = int(len(tab_label) * 8.4) + 24
-tab_x = 96
+# --- タブバー (信号ボタン行 + タブ行の2段構成) ---
+DOT_ROW_H = 30
+TAB_ROW_H = 26
+HEADER_H = DOT_ROW_H + TAB_ROW_H
+tab_label = "zsh"
+tab_w = round(len(tab_label) * 7.2) + 26
+tab_x = 16
+tab_skew = 7
 
 svg = f"""<svg width="{WIDTH}" height="{height}" viewBox="0 0 {WIDTH} {height}" fill="none" xmlns="http://www.w3.org/2000/svg">
   <style>
@@ -221,22 +218,24 @@ svg = f"""<svg width="{WIDTH}" height="{height}" viewBox="0 0 {WIDTH} {height}" 
     .green {{ font-size: 14px; fill: {DRAGON_GREEN}; }}
     .yellow {{ font-size: 14px; fill: {DRAGON_YELLOW}; }}
     .accent {{ font-size: 14px; fill: {ACCENT}; }}
-    .tabtext {{ font-size: 13px; fill: {ON_ACCENT}; font-weight: 700; }}
-    .promptseg {{ font-size: 14px; }}
+    .tabtext {{ font-size: 12px; fill: {ON_ACCENT}; font-weight: 700; }}
+    .promptseg {{ font-size: 13px; }}
     .cursor {{ fill: {CARET}; animation: blink 1s steps(2, start) infinite; }}
     @keyframes blink {{ 50% {{ opacity: 0; }} }}
   </style>
 
   <rect x="0.75" y="0.75" width="{WIDTH-1.5}" height="{height-1.5}" rx="12" class="bg border"/>
 
-  <rect x="0.75" y="0.75" width="{WIDTH-1.5}" height="{TAB_H}" rx="12" fill="{BG_ALT}"/>
-  <rect x="0.75" y="{TAB_H/2}" width="{WIDTH-1.5}" height="{TAB_H/2}" fill="{BG_ALT}"/>
-  <circle cx="24" cy="{TAB_H/2+0.75}" r="6" fill="{DRAGON_RED}"/>
-  <circle cx="45" cy="{TAB_H/2+0.75}" r="6" fill="{DRAGON_YELLOW}"/>
-  <circle cx="66" cy="{TAB_H/2+0.75}" r="6" fill="{DRAGON_GREEN}"/>
+  <path d="M 0.75 12.75 Q 0.75 0.75 12.75 0.75 L {WIDTH-12.75} 0.75 Q {WIDTH-0.75} 0.75 {WIDTH-0.75} 12.75
+           L {WIDTH-0.75} {HEADER_H} L 0.75 {HEADER_H} Z" fill="{BG_ALT}"/>
+  <line x1="0.75" y1="{DOT_ROW_H}" x2="{WIDTH-0.75}" y2="{DOT_ROW_H}" stroke="{BORDER}" stroke-width="1"/>
 
-  <polygon points="{tab_x},1 {tab_x+10},{TAB_H} {tab_x+tab_w+10},{TAB_H} {tab_x+tab_w},1" fill="{ACCENT}"/>
-  {text(tab_x + tab_w/2 + 5, TAB_H*0.66, "tabtext", tab_label, anchor="middle")}
+  <circle cx="24" cy="{DOT_ROW_H/2}" r="6" fill="{DRAGON_RED}"/>
+  <circle cx="45" cy="{DOT_ROW_H/2}" r="6" fill="{DRAGON_YELLOW}"/>
+  <circle cx="66" cy="{DOT_ROW_H/2}" r="6" fill="{DRAGON_GREEN}"/>
+
+  <polygon points="{tab_x},{DOT_ROW_H} {tab_x+tab_skew},{HEADER_H} {tab_x+tab_w+tab_skew},{HEADER_H} {tab_x+tab_w},{DOT_ROW_H}" fill="{ACCENT}"/>
+  {text(tab_x + tab_w/2 + tab_skew/2, DOT_ROW_H + TAB_ROW_H*0.68, "tabtext", tab_label, anchor="middle")}
 
   {"".join(rows)}
 
