@@ -1,0 +1,33 @@
+<svg width="900" height="800" viewBox="0 0 900 800" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    text { font-family: "HackGen Console NF", "SFMono-Regular", "Cascadia Code", "Roboto Mono", Menlo, Consolas, monospace; }
+    .bg { fill: #181616; }
+    .border { stroke: #282727; stroke-width: 1.5; }
+    .mono { font-size: 14px; fill: #c5c9c5; }
+    .title { font-size: 16px; font-weight: 700; fill: #a2c9fd; }
+    .prompt { font-size: 14px; font-weight: 700; fill: #87a987; }
+    .dim { font-size: 14px; fill: #737c73; }
+    .green { font-size: 14px; fill: #87a987; }
+    .yellow { font-size: 14px; fill: #c4b28a; }
+    .accent { font-size: 14px; fill: #a2c9fd; }
+    .tabtext { font-size: 13px; fill: #111418; font-weight: 700; }
+    .promptseg { font-size: 14px; }
+    .cursor { fill: #c8c093; animation: blink 1s steps(2, start) infinite; }
+    @keyframes blink { 50% { opacity: 0; } }
+  </style>
+
+  <rect x="0.75" y="0.75" width="898.5" height="798.5" rx="12" class="bg border"/>
+
+  <rect x="0.75" y="0.75" width="898.5" height="34" rx="12" fill="#1d1c19"/>
+  <rect x="0.75" y="17.0" width="898.5" height="17.0" fill="#1d1c19"/>
+  <circle cx="24" cy="17.75" r="6" fill="#c4746e"/>
+  <circle cx="45" cy="17.75" r="6" fill="#c4b28a"/>
+  <circle cx="66" cy="17.75" r="6" fill="#87a987"/>
+
+  <polygon points="96,1 106,34 172,34 162,1" fill="#a2c9fd"/>
+  <text x="134.0" y="22.44" class="tabtext" text-anchor="middle"> zsh </text>
+
+  <text x="34" y="74" class="title">naruto@wezterm</text><text x="34" y="100" class="dim">──────────────────────────────────────────────────────────────────────────────</text><text x="34" y="136" class="prompt">$ whoami</text><text x="34" y="164" class="mono">Role        Security &amp; Privacy Researcher (B4)</text><text x="34" y="188" class="mono">University  Kyushu University, Faculty of Engineering</text><text x="34" y="212" class="mono">Lab         Sakurai Laboratory</text><text x="34" y="236" class="mono">Location    Fukuoka, Japan</text><text x="34" y="276" class="prompt">$ research --current</text><text x="34" y="300" class="green">[RUNNING] Human-Computable Passwords</text><text x="34" y="340" class="prompt">$ cat research.txt</text><text x="34" y="364" class="mono">Benchmarking authentication schemes a human can compute by hand,</text><text x="34" y="388" class="mono">evaluating LLM limits in both rule execution (deduction) and</text><text x="34" y="412" class="mono">rule inference (induction).</text><text x="34" y="452" class="prompt">$ stack --list</text><text x="34" y="480" class="mono">Python · Rust · Nix / Home Manager · ghq</text><text x="34" y="520" class="prompt">$ env --list</text><text x="34" y="548" class="mono">OS       WSL2 (Windows 11) · macOS (Apple Silicon) · NixOS</text><text x="34" y="572" class="mono">Editor   Neovim + WezTerm</text><text x="34" y="596" class="mono">WM       komorebi + YASB (Win) / Hyprland (NixOS) / AeroSpace (Mac)</text><text x="34" y="636" class="prompt">$ projects --active</text><text x="34" y="664" class="dim">PID   PROJECT                         STATUS</text><text x="34" y="688" class="mono">001   human-computable-passwords      running</text>
+
+  <rect x="34" y="734" width="183" height="40" fill="#d7bde4"/><text x="125.5" y="760" class="promptseg" text-anchor="middle" fill="#111418" font-weight="bold"> nixcli in wezterm </text><polygon points="217,734 231,754.0 217,774" fill="#d7bde4"/><rect x="217" y="734" width="192" height="40" fill="#a2c9fd"/><text x="313.0" y="760" class="promptseg" text-anchor="middle" fill="#111418" font-weight="bold"> ~/Naruto-Takahashi </text><polygon points="409,734 423,754.0 409,774" fill="#a2c9fd"/><rect x="409" y="734" width="71" height="40" fill="#272a2f"/><text x="444.5" y="760" class="promptseg" text-anchor="middle" fill="#a2c9fd" font-weight="normal">  main </text><polygon points="480,734 494,754.0 480,774" fill="#272a2f"/><text x="496" y="760" class="promptseg" fill="#bbc7db" font-weight="bold">❯</text><rect x="518" y="745" width="8" height="17" rx="1" class="cursor"/>
+</svg>

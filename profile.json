@@ -1,0 +1,43 @@
+{
+  "identity": {
+    "username": "naruto",
+    "terminal_host": "wezterm",
+    "role": "Security & Privacy Researcher (B4)",
+    "university": "Kyushu University, Faculty of Engineering",
+    "lab": "Sakurai Laboratory",
+    "location": "Fukuoka, Japan"
+  },
+  "systems": {
+    "os": ["WSL2 (Windows 11)", "macOS (Apple Silicon)", "NixOS"],
+    "editor": "Neovim + WezTerm",
+    "wm": "komorebi + YASB (Win) / Hyprland (NixOS) / AeroSpace (Mac)"
+  },
+  "research": {
+    "current": [
+      { "status": "RUNNING", "label": "Human-Computable Passwords" }
+    ],
+    "description": [
+      "Benchmarking authentication schemes a human can compute by hand,",
+      "evaluating LLM limits in both rule execution (deduction) and",
+      "rule inference (induction)."
+    ]
+  },
+  "projects": [
+    {
+      "pid": "001",
+      "name": "human-computable-passwords",
+      "status": "running"
+    }
+  ],
+  "stack": [
+    "Python",
+    "Rust",
+    "Nix / Home Manager",
+    "ghq"
+  ],
+  "prompt": {
+    "badge": "nixcli in wezterm",
+    "path": "~/Naruto-Takahashi",
+    "branch": "main"
+  }
+}
