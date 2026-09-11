@@ -137,18 +137,18 @@ body_bottom = y + 30
 
 # --- Starship 風 powerline プロンプト (下部バー) ---
 # セグメント構成: nixcli_badge(tertiary) -> directory(accent) -> git_branch/status(dark) -> character
-PROMPT_H = 32
-prompt_y_top = body_bottom + 14
-prompt_baseline = prompt_y_top + PROMPT_H / 2 + 5
+PROMPT_H = 24
+prompt_y_top = body_bottom + 10
+prompt_baseline = prompt_y_top + PROMPT_H / 2 + 4
 bar_bottom = prompt_y_top + PROMPT_H
 
 badge_text = f' {prompt.get("badge", "")} '
 dir_text = f' {prompt.get("path", "")} '
 git_text = f' {prompt.get("branch", "")} '
 
-CHAR_W = 6.6
-PAD = 6
-ARROW_W = 10  # powerline矢印の突き出し幅
+CHAR_W = 6.2
+PAD = 4
+ARROW_W = 8  # powerline矢印の突き出し幅
 
 def seg_width(s):
     return round(len(s) * CHAR_W) + PAD * 2
@@ -185,17 +185,17 @@ for boundary, (_, bg_color, _) in zip(bounds, segments):
         f'{boundary},{bar_bottom}" fill="{bg_color}"/>'
     )
 
-arrow_x = seg_x + ARROW_W + 10
+arrow_x = seg_x + ARROW_W + 8
 prompt_svg = rect_svg + arrow_svg + seg_text_svg
 prompt_svg.append(
     f'<text x="{arrow_x}" y="{prompt_baseline}" class="promptseg" fill="{SECONDARY}" '
     f'font-weight="bold">&#10095;</text>'
 )
 prompt_svg.append(
-    f'<rect x="{arrow_x + 16}" y="{prompt_baseline - 13}" width="7" height="15" rx="1" class="cursor"/>'
+    f'<rect x="{arrow_x + 14}" y="{prompt_baseline - 11}" width="6" height="13" rx="1" class="cursor"/>'
 )
 
-height = bar_bottom + 26
+height = bar_bottom + 16
 
 # --- タブバー (信号ボタン行 + タブ行の2段構成) ---
 DOT_ROW_H = 30
@@ -219,7 +219,7 @@ svg = f"""<svg width="{WIDTH}" height="{height}" viewBox="0 0 {WIDTH} {height}" 
     .yellow {{ font-size: 14px; fill: {DRAGON_YELLOW}; }}
     .accent {{ font-size: 14px; fill: {ACCENT}; }}
     .tabtext {{ font-size: 12px; fill: {ON_ACCENT}; font-weight: 700; }}
-    .promptseg {{ font-size: 13px; }}
+    .promptseg {{ font-size: 12px; }}
     .cursor {{ fill: {CARET}; animation: blink 1s steps(2, start) infinite; }}
     @keyframes blink {{ 50% {{ opacity: 0; }} }}
   </style>

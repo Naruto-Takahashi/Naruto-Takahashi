@@ -1,4 +1,4 @@
-<svg width="900" height="790" viewBox="0 0 900 790" fill="none" xmlns="http://www.w3.org/2000/svg">
+<svg width="900" height="768" viewBox="0 0 900 768" fill="none" xmlns="http://www.w3.org/2000/svg">
   <style>
     text { font-family: "HackGen Console NF", "SFMono-Regular", "Cascadia Code", "Roboto Mono", Menlo, Consolas, monospace; }
     .bg { fill: #181616; }
@@ -11,12 +11,12 @@
     .yellow { font-size: 14px; fill: #c4b28a; }
     .accent { font-size: 14px; fill: #a2c9fd; }
     .tabtext { font-size: 12px; fill: #111418; font-weight: 700; }
-    .promptseg { font-size: 13px; }
+    .promptseg { font-size: 12px; }
     .cursor { fill: #c8c093; animation: blink 1s steps(2, start) infinite; }
     @keyframes blink { 50% { opacity: 0; } }
   </style>
 
-  <rect x="0.75" y="0.75" width="898.5" height="788.5" rx="12" class="bg border"/>
+  <rect x="0.75" y="0.75" width="898.5" height="766.5" rx="12" class="bg border"/>
 
   <path d="M 0.75 12.75 Q 0.75 0.75 12.75 0.75 L 887.25 0.75 Q 899.25 0.75 899.25 12.75
            L 899.25 56 L 0.75 56 Z" fill="#1d1c19"/>
@@ -31,5 +31,5 @@
 
   <text x="34" y="74" class="title">naruto@wezterm</text><text x="34" y="100" class="dim">------------------------------------------------------------------------------</text><text x="34" y="136" class="prompt">$ whoami</text><text x="34" y="164" class="mono">Role        Security &amp; Privacy Researcher (B4)</text><text x="34" y="188" class="mono">University  Kyushu University, Faculty of Engineering</text><text x="34" y="212" class="mono">Lab         Sakurai Laboratory</text><text x="34" y="236" class="mono">Location    Fukuoka, Japan</text><text x="34" y="276" class="prompt">$ research --current</text><text x="34" y="300" class="green">[RUNNING] Human-Computable Passwords</text><text x="34" y="340" class="prompt">$ cat research.txt</text><text x="34" y="364" class="mono">Benchmarking authentication schemes a human can compute by hand,</text><text x="34" y="388" class="mono">evaluating LLM limits in both rule execution (deduction) and</text><text x="34" y="412" class="mono">rule inference (induction).</text><text x="34" y="452" class="prompt">$ stack --list</text><text x="34" y="480" class="mono">Python · Rust · Nix / Home Manager · ghq</text><text x="34" y="520" class="prompt">$ env --list</text><text x="34" y="548" class="mono">OS       WSL2 (Windows 11) · macOS (Apple Silicon) · NixOS</text><text x="34" y="572" class="mono">Editor   Neovim + WezTerm</text><text x="34" y="596" class="mono">WM       komorebi + YASB (Win) / Hyprland (NixOS) / AeroSpace (Mac)</text><text x="34" y="636" class="prompt">$ projects --active</text><text x="34" y="664" class="dim">PID   PROJECT                         STATUS</text><text x="34" y="688" class="mono">001   human-computable-passwords      running</text>
 
-  <rect x="34" y="732" width="137" height="32" fill="#d7bde4"/><rect x="171" y="732" width="144" height="32" fill="#a2c9fd"/><rect x="315" y="732" width="52" height="32" fill="#272a2f"/><polygon points="171,732 181,748.0 171,764" fill="#d7bde4"/><polygon points="315,732 325,748.0 315,764" fill="#a2c9fd"/><polygon points="367,732 377,748.0 367,764" fill="#272a2f"/><text x="102.5" y="753.0" class="promptseg" text-anchor="middle" fill="#111418" font-weight="bold"> nixcli in wezterm </text><text x="243.0" y="753.0" class="promptseg" text-anchor="middle" fill="#111418" font-weight="bold"> ~/Naruto-Takahashi </text><text x="341.0" y="753.0" class="promptseg" text-anchor="middle" fill="#a2c9fd" font-weight="bold"> main </text><text x="387" y="753.0" class="promptseg" fill="#bbc7db" font-weight="bold">&#10095;</text><rect x="403" y="740.0" width="7" height="15" rx="1" class="cursor"/>
+  <rect x="34" y="728" width="126" height="24" fill="#d7bde4"/><rect x="160" y="728" width="132" height="24" fill="#a2c9fd"/><rect x="292" y="728" width="45" height="24" fill="#272a2f"/><polygon points="160,728 168,740.0 160,752" fill="#d7bde4"/><polygon points="292,728 300,740.0 292,752" fill="#a2c9fd"/><polygon points="337,728 345,740.0 337,752" fill="#272a2f"/><text x="97.0" y="744.0" class="promptseg" text-anchor="middle" fill="#111418" font-weight="bold"> nixcli in wezterm </text><text x="226.0" y="744.0" class="promptseg" text-anchor="middle" fill="#111418" font-weight="bold"> ~/Naruto-Takahashi </text><text x="314.5" y="744.0" class="promptseg" text-anchor="middle" fill="#a2c9fd" font-weight="bold"> main </text><text x="353" y="744.0" class="promptseg" fill="#bbc7db" font-weight="bold">&#10095;</text><rect x="367" y="733.0" width="6" height="13" rx="1" class="cursor"/>
 </svg>
