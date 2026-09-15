@@ -43,8 +43,7 @@
     }
   ],
   "stack": {
-    "languages": ["Python", "Rust"],
-    "tooling": ["Nix / Home Manager", "ghq"]
+    "languages": ["Python", "C", "C++", "Assembly"]
   },
   "prompt": {
     "path": "~/Naruto-Takahashi",

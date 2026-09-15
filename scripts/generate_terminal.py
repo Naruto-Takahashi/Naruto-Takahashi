@@ -313,21 +313,16 @@ if description:
         current.append(text(LEFT, y, "mono", line))
     flush_block()
 
-STACK_VALUE_X = LEFT + 96
-
 if stack:
     y += CMD_TO_NEXT_BAR_GAP
     y = run_command(y, "stack --list")
     pending_delay = output_delay
     y += 28
-    current.append(kv_row(LEFT, STACK_VALUE_X, y, "mono", "Languages", " · ".join(stack.get("languages", []))))
-    y += LINE_H
-    current.append(kv_row(LEFT, STACK_VALUE_X, y, "mono", "Tooling", " · ".join(stack.get("tooling", []))))
+    current.append(text(LEFT, y, "mono", " · ".join(stack.get("languages", []))))
     flush_block()
 
 OS_X = LEFT
 WM_X = LEFT + 190
-EDITOR_VALUE_X = LEFT + 68
 
 if systems:
     hosts = systems.get("hosts", [])
@@ -349,8 +344,14 @@ if systems:
             f'<tspan x="{WM_X}">{esc(host.get("wm", ""))}</tspan>'
             f'</text>'
         )
-    y += 28
-    current.append(kv_row(LEFT, EDITOR_VALUE_X, y, "mono", "Editor", systems.get("editor", "")))
+    # Editorも同じOS/WM列のテーブルの続きとして描き、単独行で浮かないようにする
+    y += LINE_H
+    current.append(
+        f'<text x="{OS_X}" y="{y}" class="mono">'
+        f'<tspan x="{OS_X}">Editor</tspan>'
+        f'<tspan x="{WM_X}">{esc(systems.get("editor", ""))}</tspan>'
+        f'</text>'
+    )
     flush_block()
 
 PID_X = LEFT
