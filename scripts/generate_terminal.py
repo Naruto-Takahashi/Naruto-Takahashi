@@ -38,6 +38,15 @@ DRAGON_GREEN = "#87a987"
 DRAGON_YELLOW = "#c4b28a"
 DRAGON_RED = "#c4746e"
 
+# kanagawa-dragon.tmTheme のシンタックスハイライト配色 (実測値)。
+# ターミナル全体を塗り分けるのではなく、実際にコードを読む時の役割
+# (関数名/キーワード/型名/文字列) に近い意味を持つ場所だけに絞って使う。
+DRAGON_STRING = "#8a9a7b"   # scope: string
+DRAGON_STORAGE = "#8992a7"  # scope: storage, storage.type (キーワード/フラグ相当)
+DRAGON_FUNC = "#8ba4b0"     # scope: entity.name.function (コマンド名相当)
+DRAGON_CLASS = "#8ea4a2"    # scope: entity.name.class (プロジェクト名相当)
+DRAGON_CONST = "#b6927b"    # scope: constant.language
+
 # WezTerm/Starship フォールバック Matugen パレット
 ACCENT = "#a2c9fd"
 ON_ACCENT = "#111418"
@@ -102,7 +111,7 @@ def kv_row(x, value_x, y, cls, key, value):
     # <tspan> に分けることで、フォントに関わらず値の開始位置を揃える。
     return (
         f'<text x="{x}" y="{y}" class="{cls}">'
-        f'<tspan x="{x}">{esc(key)}</tspan>'
+        f'<tspan x="{x}" class="syn-storage">{esc(key)}</tspan>'
         f'<tspan x="{value_x}">{esc(value)}</tspan>'
         f'</text>'
     )
@@ -211,10 +220,30 @@ def prompt_and_command(block_svg, y_top, path, branch, cmd, type_delay, variant=
         f'<text x="{LEFT}" y="{cmd_y}" class="cmdline">'
         f'<tspan class="promptchar" font-weight="bold">&#10095;</tspan> '
         f'<tspan class="{variant_cls}" '
-        f'style="animation-delay:{type_delay:.2f}s;animation-duration:{dur:.2f}s">{esc(cmd)}</tspan>'
+        f'style="animation-delay:{type_delay:.2f}s;animation-duration:{dur:.2f}s">{highlight_cmd(cmd)}</tspan>'
         f'</text>'
     )
     return cmd_y, dur
+
+
+def highlight_cmd(cmd):
+    """コマンド行を最小限だけシンタックスハイライトする:
+    先頭のコマンド名は Function name 色、--flag は Storage(キーワード)色、
+    残りは通常の前景色のまま。"""
+    parts = cmd.split(" ")
+    out = []
+    for i, part in enumerate(parts):
+        if i == 0:
+            cls = "syn-func"
+        elif part.startswith("--"):
+            cls = "syn-storage"
+        else:
+            cls = None
+        token = esc(part)
+        out.append(f'<tspan class="{cls}">{token}</tspan>' if cls else token)
+        if i != len(parts) - 1:
+            out.append(" ")
+    return "".join(out)
 
 
 with PROFILE_PATH.open(encoding="utf-8") as f:
@@ -302,7 +331,15 @@ if stack:
     y = run_command(y, "stack --list")
     pending_delay = output_delay
     y += 28
-    current.append(text(LEFT, y, "mono", " · ".join(stack.get("languages", []))))
+    # 言語名を Function/Storage/Class/Const の4色でローテーションして、
+    # シンタックスハイライトの雰囲気を控えめに出す (塗り絵にならない程度)。
+    lang_colors = ["syn-func", "syn-storage", "syn-class", "syn-const"]
+    lang_spans = []
+    for i, lang in enumerate(stack.get("languages", [])):
+        if i:
+            lang_spans.append('<tspan class="dim"> · </tspan>')
+        lang_spans.append(f'<tspan class="{lang_colors[i % len(lang_colors)]}">{esc(lang)}</tspan>')
+    current.append(f'<text x="{LEFT}" y="{y}" class="mono">{"".join(lang_spans)}</text>')
     flush_block()
 
 OS_X = LEFT
@@ -358,8 +395,8 @@ if projects:
         status = project.get("status", "")
         current.append(
             f'<text x="{PID_X}" y="{y}" class="mono">'
-            f'<tspan x="{PID_X}">{esc(project.get("pid", ""))}</tspan>'
-            f'<tspan x="{NAME_X}">{esc(project.get("name", ""))}</tspan>'
+            f'<tspan x="{PID_X}" class="dim">{esc(project.get("pid", ""))}</tspan>'
+            f'<tspan x="{NAME_X}" class="syn-class">{esc(project.get("name", ""))}</tspan>'
             f'<tspan x="{STATUS_X}" class="{status_class(status)}">{esc(status)}</tspan>'
             f'</text>'
         )
@@ -468,6 +505,11 @@ svg = f"""<svg width="{WIDTH}" height="{height}" viewBox="0 0 {WIDTH} {height}" 
     .green {{ font-size: 14px; fill: {DRAGON_GREEN}; }}
     .yellow {{ font-size: 14px; fill: {DRAGON_YELLOW}; }}
     .accent {{ font-size: 14px; fill: {ACCENT}; }}
+    .syn-func {{ fill: {DRAGON_FUNC}; }}
+    .syn-storage {{ fill: {DRAGON_STORAGE}; }}
+    .syn-class {{ fill: {DRAGON_CLASS}; }}
+    .syn-string {{ fill: {DRAGON_STRING}; }}
+    .syn-const {{ fill: {DRAGON_CONST}; }}
     .tabtext {{ font-size: 12px; fill: {ON_ACCENT}; font-weight: 700; }}
     .tabtext-inactive {{ font-size: 12px; fill: {MUTED}; font-weight: 700; }}
     .barseg {{ font-size: {BAR_FONT}px; }}
