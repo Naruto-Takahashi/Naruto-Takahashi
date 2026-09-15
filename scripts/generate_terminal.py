@@ -333,7 +333,9 @@ def run_command(y, cmd):
 # projects(取り組んでいること) -> research(いま推している研究テーマの詳細)。
 # 「何者か」を固めてから「何を使っているか」「何をしているか」に進み、
 # 最後に研究テーマの詳細で締める流れにしている。
-y += CMD_TO_NEXT_BAR_GAP
+# 罫線の直後だけは他のコマンド間より詰めてよい(セクション区切りではなく
+# ヘッダーの一部として見せたいため)。
+y += 18
 y = run_command(y, "whoami")
 pending_delay = output_delay
 whoami_rows = [
