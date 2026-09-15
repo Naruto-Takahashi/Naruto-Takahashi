@@ -32,10 +32,8 @@ FONT = ('"HackGen Console NF", "SFMono-Regular", "Cascadia Code", '
 BG = "#181616"
 BG_ALT = "#1d1c19"      # タブバー相当 (bg寄りの濃色)
 FG = "#c5c9c5"
-INACTIVE_TAB_BG = "#3a3a3a"  # 濃い灰色 (非アクティブタブ)
 DIM = "#737c73"         # コメント色
 BORDER = "#282727"
-CARET = "#c8c093"
 DRAGON_GREEN = "#87a987"
 DRAGON_YELLOW = "#c4b28a"
 DRAGON_RED = "#c4746e"
@@ -398,7 +396,7 @@ TAB_GAP = 3
 # 隣には実際の開発環境(Neovim + WezTerm)を匂わせる非アクティブなタブを
 # 並べ、普段づかいの多タブ構成っぽい雰囲気を出している。
 active_tab_label = "profile"
-inactive_tab_labels = ["nvim", "lazygit"]
+inactive_tab_labels = ["nvim", "lazygit", "yazi"]
 
 
 def tab_polygon(x, w, y_top, y_bottom, skew):
@@ -418,7 +416,7 @@ for label in inactive_tab_labels:
     w = round(len(label) * 6.6) + 12
     tab_svg.append(
         f'<polygon points="{tab_polygon(tab_x, w, DOT_ROW_H, HEADER_H, tab_skew)}" '
-        f'fill="{INACTIVE_TAB_BG}"/>'
+        f'fill="{BG_ALT}"/>'
     )
     tab_svg.append(text(tab_x + w/2 + tab_skew/2, DOT_ROW_H + TAB_ROW_H*0.68, "tabtext-inactive", label, anchor="middle"))
     tab_x += w + tab_skew + TAB_GAP
@@ -446,9 +444,9 @@ svg = f"""<svg width="{WIDTH}" height="{height}" viewBox="0 0 {WIDTH} {height}" 
     .yellow {{ font-size: 14px; fill: {DRAGON_YELLOW}; }}
     .accent {{ font-size: 14px; fill: {ACCENT}; }}
     .tabtext {{ font-size: 12px; fill: {ON_ACCENT}; font-weight: 700; }}
-    .tabtext-inactive {{ font-size: 12px; fill: #ffffff; font-weight: 700; }}
+    .tabtext-inactive {{ font-size: 12px; fill: {MUTED}; font-weight: 700; }}
     .barseg {{ font-size: {BAR_FONT}px; }}
-    .cursor {{ fill: {CARET}; animation: blink 1s steps(2, start) infinite; }}
+    .cursor {{ fill: {TERTIARY}; animation: blink 1s steps(2, start) infinite; }}
     @keyframes blink {{ 50% {{ opacity: 0; }} }}
 
     /* タイピング再生 (1回完結): ブロックが上からフェード+スライドインで
