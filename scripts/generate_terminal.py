@@ -224,7 +224,7 @@ identity = p["identity"]
 systems = p.get("systems", {})
 research = p.get("research", {})
 projects = p.get("projects", [])
-stack = p.get("stack", [])
+stack = p.get("stack", {})
 prompt = p.get("prompt", {})
 
 PATH = prompt.get("path", "")
@@ -313,26 +313,44 @@ if description:
         current.append(text(LEFT, y, "mono", line))
     flush_block()
 
+STACK_VALUE_X = LEFT + 96
+
 if stack:
     y += CMD_TO_NEXT_BAR_GAP
     y = run_command(y, "stack --list")
     pending_delay = output_delay
     y += 28
-    current.append(text(LEFT, y, "mono", " · ".join(stack)))
+    current.append(kv_row(LEFT, STACK_VALUE_X, y, "mono", "Languages", " · ".join(stack.get("languages", []))))
+    y += LINE_H
+    current.append(kv_row(LEFT, STACK_VALUE_X, y, "mono", "Tooling", " · ".join(stack.get("tooling", []))))
     flush_block()
 
-ENV_VALUE_X = LEFT + 68
+OS_X = LEFT
+WM_X = LEFT + 190
+EDITOR_VALUE_X = LEFT + 68
 
 if systems:
+    hosts = systems.get("hosts", [])
     y += CMD_TO_NEXT_BAR_GAP
     y = run_command(y, "env --list")
     pending_delay = output_delay
     y += 28
-    current.append(kv_row(LEFT, ENV_VALUE_X, y, "mono", "OS", " · ".join(systems.get("os", []))))
-    y += LINE_H
-    current.append(kv_row(LEFT, ENV_VALUE_X, y, "mono", "Editor", systems.get("editor", "")))
-    y += LINE_H
-    current.append(kv_row(LEFT, ENV_VALUE_X, y, "mono", "WM", systems.get("wm", "")))
+    current.append(
+        f'<text x="{OS_X}" y="{y}" class="dim">'
+        f'<tspan x="{OS_X}">OS</tspan>'
+        f'<tspan x="{WM_X}">WM</tspan>'
+        f'</text>'
+    )
+    for host in hosts:
+        y += LINE_H
+        current.append(
+            f'<text x="{OS_X}" y="{y}" class="mono">'
+            f'<tspan x="{OS_X}">{esc(host.get("os", ""))}</tspan>'
+            f'<tspan x="{WM_X}">{esc(host.get("wm", ""))}</tspan>'
+            f'</text>'
+        )
+    y += 28
+    current.append(kv_row(LEFT, EDITOR_VALUE_X, y, "mono", "Editor", systems.get("editor", "")))
     flush_block()
 
 PID_X = LEFT
@@ -416,7 +434,7 @@ for label in inactive_tab_labels:
     w = round(len(label) * 6.6) + 12
     tab_svg.append(
         f'<polygon points="{tab_polygon(tab_x, w, DOT_ROW_H, HEADER_H, tab_skew)}" '
-        f'fill="{BG_ALT}"/>'
+        f'fill="{BG_ALT}" stroke="{BORDER}" stroke-width="1" stroke-linejoin="round"/>'
     )
     tab_svg.append(text(tab_x + w/2 + tab_skew/2, DOT_ROW_H + TAB_ROW_H*0.68, "tabtext-inactive", label, anchor="middle"))
     tab_x += w + tab_skew + TAB_GAP
