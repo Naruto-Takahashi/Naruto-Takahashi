@@ -280,6 +280,10 @@ def run_command(y, cmd):
 
 WHOAMI_VALUE_X = LEFT + 96
 
+# ブロックの並び順: whoami(自己紹介) -> stack/env(スキル・環境) ->
+# projects(取り組んでいること) -> research(いま推している研究テーマの詳細)。
+# 「何者か」を固めてから「何を使っているか」「何をしているか」に進み、
+# 最後に研究テーマの詳細で締める流れにしている。
 y += CMD_TO_NEXT_BAR_GAP
 y = run_command(y, "whoami")
 pending_delay = output_delay
@@ -292,26 +296,6 @@ for key, value in [
     y += 28 if key == "Role" else LINE_H
     current.append(kv_row(LEFT, WHOAMI_VALUE_X, y, "mono", key, value))
 flush_block()
-
-y += CMD_TO_NEXT_BAR_GAP
-y = run_command(y, "research --current")
-pending_delay = output_delay
-for item in research.get("current", []):
-    y += LINE_H
-    status = item.get("status", "").upper()
-    label = item.get("label", "")
-    current.append(text(LEFT, y, status_class(status), f"[{status}] {label}"))
-flush_block()
-
-description = research.get("description", [])
-if description:
-    y += CMD_TO_NEXT_BAR_GAP
-    y = run_command(y, "cat research.txt")
-    pending_delay = output_delay
-    for line in description:
-        y += LINE_H
-        current.append(text(LEFT, y, "mono", line))
-    flush_block()
 
 if stack:
     y += CMD_TO_NEXT_BAR_GAP
@@ -378,6 +362,26 @@ if projects:
             f'<tspan x="{STATUS_X}">{esc(project.get("status", ""))}</tspan>'
             f'</text>'
         )
+    flush_block()
+
+y += CMD_TO_NEXT_BAR_GAP
+y = run_command(y, "research --current")
+pending_delay = output_delay
+for item in research.get("current", []):
+    y += LINE_H
+    status = item.get("status", "").upper()
+    label = item.get("label", "")
+    current.append(text(LEFT, y, status_class(status), f"[{status}] {label}"))
+flush_block()
+
+description = research.get("description", [])
+if description:
+    y += CMD_TO_NEXT_BAR_GAP
+    y = run_command(y, "cat research.txt")
+    pending_delay = output_delay
+    for line in description:
+        y += LINE_H
+        current.append(text(LEFT, y, "mono", line))
     flush_block()
 
 body_bottom = y + 30
