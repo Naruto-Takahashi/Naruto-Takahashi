@@ -389,10 +389,38 @@ for block, d in zip(blocks, block_delays):
 DOT_ROW_H = 20
 TAB_ROW_H = 18
 HEADER_H = DOT_ROW_H + TAB_ROW_H
-tab_label = "zsh"
-tab_w = round(len(tab_label) * 7.2) + 14
-tab_x = 16
 tab_skew = 6
+TAB_GAP = 3
+
+# アクティブタブは「今まさにこのprofile.jsonを覗いている」というメタな
+# ネタとして、シェル名ではなくデータソースのファイル名を表示する。
+# 隣には実際の開発環境(Neovim + WezTerm)を匂わせる非アクティブなタブを
+# 並べ、普段づかいの多タブ構成っぽい雰囲気を出している。
+active_tab_label = "profile.json"
+inactive_tab_labels = ["README.md", "nvim"]
+
+
+def tab_polygon(x, w, y_top, y_bottom, skew):
+    return f'{x},{y_top} {x+skew},{y_bottom} {x+w+skew},{y_bottom} {x+w},{y_top}'
+
+
+tab_svg = []
+tab_x = 16
+active_w = round(len(active_tab_label) * 7.2) + 14
+tab_svg.append(
+    f'<polygon points="{tab_polygon(tab_x, active_w, DOT_ROW_H, HEADER_H, tab_skew)}" fill="{ACCENT}"/>'
+)
+tab_svg.append(text(tab_x + active_w/2 + tab_skew/2, DOT_ROW_H + TAB_ROW_H*0.68, "tabtext", active_tab_label, anchor="middle"))
+tab_x += active_w + tab_skew + TAB_GAP
+
+for label in inactive_tab_labels:
+    w = round(len(label) * 6.6) + 12
+    tab_svg.append(
+        f'<polygon points="{tab_polygon(tab_x, w, DOT_ROW_H, HEADER_H, tab_skew)}" '
+        f'fill="{BG_ALT}" stroke="{BORDER}" stroke-width="1"/>'
+    )
+    tab_svg.append(text(tab_x + w/2 + tab_skew/2, DOT_ROW_H + TAB_ROW_H*0.68, "tabtext-inactive", label, anchor="middle"))
+    tab_x += w + tab_skew + TAB_GAP
 
 svg = f"""<svg width="{WIDTH}" height="{height}" viewBox="0 0 {WIDTH} {height}" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
@@ -417,6 +445,7 @@ svg = f"""<svg width="{WIDTH}" height="{height}" viewBox="0 0 {WIDTH} {height}" 
     .yellow {{ font-size: 14px; fill: {DRAGON_YELLOW}; }}
     .accent {{ font-size: 14px; fill: {ACCENT}; }}
     .tabtext {{ font-size: 12px; fill: {ON_ACCENT}; font-weight: 700; }}
+    .tabtext-inactive {{ font-size: 12px; fill: {DIM}; font-weight: 700; }}
     .barseg {{ font-size: {BAR_FONT}px; }}
     .cursor {{ fill: {CARET}; animation: blink 1s steps(2, start) infinite; }}
     @keyframes blink {{ 50% {{ opacity: 0; }} }}
@@ -494,8 +523,7 @@ svg = f"""<svg width="{WIDTH}" height="{height}" viewBox="0 0 {WIDTH} {height}" 
   <circle cx="39" cy="{DOT_ROW_H/2}" r="4.5" fill="{DRAGON_YELLOW}"/>
   <circle cx="56" cy="{DOT_ROW_H/2}" r="4.5" fill="{DRAGON_GREEN}"/>
 
-  <polygon points="{tab_x},{DOT_ROW_H} {tab_x+tab_skew},{HEADER_H} {tab_x+tab_w+tab_skew},{HEADER_H} {tab_x+tab_w},{DOT_ROW_H}" fill="{ACCENT}"/>
-  {text(tab_x + tab_w/2 + tab_skew/2, DOT_ROW_H + TAB_ROW_H*0.68, "tabtext", tab_label, anchor="middle")}
+  {"".join(tab_svg)}
 
   {"".join(reveal_svg)}
 
