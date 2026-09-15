@@ -344,14 +344,12 @@ if systems:
             f'<tspan x="{WM_X}">{esc(host.get("wm", ""))}</tspan>'
             f'</text>'
         )
-    # Editorも同じOS/WM列のテーブルの続きとして描き、単独行で浮かないようにする
+    # EditorはOSの一種ではないため、OS/WM表の列(OS_X/WM_X)は使わず、
+    # 別のkey-value行として続ける。ただし前のkv_row実装のように大きな
+    # 余白(28px)を空けると孤立して見えたため、表の最終行からの間隔は
+    # LINE_H程度に詰めて「表の直後に続く別項目」として自然に見せている。
     y += LINE_H
-    current.append(
-        f'<text x="{OS_X}" y="{y}" class="mono">'
-        f'<tspan x="{OS_X}">Editor</tspan>'
-        f'<tspan x="{WM_X}">{esc(systems.get("editor", ""))}</tspan>'
-        f'</text>'
-    )
+    current.append(kv_row(LEFT, LEFT + 68, y, "mono", "Editor", systems.get("editor", "")))
     flush_block()
 
 PID_X = LEFT
