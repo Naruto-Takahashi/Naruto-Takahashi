@@ -5,6 +5,13 @@
   - modules/apps/bat/kanagawa-dragon.tmTheme (背景・前景・コメント色)
   - modules/apps/wezterm/wezterm.lua (フォールバックのMatugenアクセント色)
   - modules/shell/starship/starship.toml (プロンプトのセグメント構成)
+
+GitHub の README は <img src="assets/terminal.svg"> でこのファイルを直接
+参照する (camoプロキシを経由せず raw のまま配信される) ため、CSSの
+@keyframesアニメーションはそのまま閲覧者のブラウザで再生される
+(ただしJS/:hover等のインタラクションは img コンテキストでは無効)。
+これを利用して、コマンドブロックが上から順にタイプされるように
+出現する一度きりの再生演出と、常時ループするスキャンライン演出を付けている。
 """
 from pathlib import Path
 from html import escape
@@ -47,8 +54,8 @@ DARK = "#272a2f"
 # (1回だけ末尾に出るのではない) ため、コマンド行ごとに描画する。
 # git_branch の symbol は U+F418 (nf-oct-git_branch)、cmd_duration/time の
 # 区切りアイコンは U+E0B3 (powerline的な小さな山形) を実設定のまま焼き込む。
-GIT_BRANCH_ICON = ""
-SEGMENT_ICON = ""
+GIT_BRANCH_ICON = ""
+SEGMENT_ICON = ""
 
 # バー自体は実機のように細く (フォントサイズ・パディングを本文より一段階小さく)
 BAR_H = 15
@@ -58,6 +65,11 @@ BAR_PAD = 3
 ARROW_W = 6
 BAR_TO_CMD_GAP = 22
 CMD_TO_NEXT_BAR_GAP = 30
+
+# ブロックごとの再生ディレイ (「タイピング再生」演出)。ブロック数に応じて
+# 均等に増分するだけの簡易版。1ブロック = 1コマンド行+その出力ぶん。
+BLOCK_DELAY_STEP = 0.55
+TYPE_DELAY_OFFSET = 0.12
 
 
 def esc(s):
@@ -103,7 +115,7 @@ def prompt_bar(y_top, path, branch, duration, time_display):
     baseline = y_top + BAR_H / 2 + 3.2
 
     dir_text = f' {path} '
-    git_text = f' {GIT_BRANCH_ICON} {branch} '
+    git_text = f'  {GIT_BRANCH_ICON} {branch} '
     segments = [
         (dir_text, ACCENT, ON_ACCENT),
         (git_text, DARK, ACCENT),
@@ -146,15 +158,18 @@ def prompt_bar(y_top, path, branch, duration, time_display):
     return svg, bar_bottom
 
 
-def prompt_and_command(rows_svg, y_top, path, branch, duration, time_display, cmd):
+def prompt_and_command(block_svg, y_top, path, branch, duration, time_display, cmd, type_delay):
     """バー(パス/ブランチ) + 実行済みコマンド行 ($character 相当) を描き、
-    コマンド行のbaseline(y)を返す。実機同様、コマンドを打つたびにバーが出る。"""
+    コマンド行のbaseline(y)を返す。実機同様、コマンドを打つたびにバーが出る。
+    コマンド文字列自体は type_delay 秒後にタイプ演出(clip-pathの左→右ワイプ)で
+    出現させ、キーを打っている雰囲気を出す。"""
     bar_svg, bar_bottom = prompt_bar(y_top, path, branch, duration, time_display)
-    rows_svg.extend(bar_svg)
+    block_svg.extend(bar_svg)
     cmd_y = bar_bottom + BAR_TO_CMD_GAP
-    rows_svg.append(
+    block_svg.append(
         f'<text x="{LEFT}" y="{cmd_y}" class="cmdline">'
-        f'<tspan class="promptchar" font-weight="bold">&#10095;</tspan> {esc(cmd)}'
+        f'<tspan class="promptchar" font-weight="bold">&#10095;</tspan> '
+        f'<tspan class="typeline" style="animation-delay:{type_delay:.2f}s">{esc(cmd)}</tspan>'
         f'</text>'
     )
     return cmd_y
@@ -175,17 +190,31 @@ BRANCH = prompt.get("branch", "")
 DURATION = prompt.get("cmd_duration", "0s")
 TIME_DISPLAY = prompt.get("time", "00:00")
 
-rows = []
+# ブロック単位で貯めて、最後にまとめて <g class="reveal"> でラップする。
+# (「タイピング再生」演出: ブロックが上から順に、少しずつ遅れて出現する)
+blocks = []
+current = []
+
+
+def flush_block():
+    global current
+    if current:
+        blocks.append(current)
+        current = []
+
+
 y = 74
 
-rows.append(text(LEFT, y, "title", f'{identity["username"]}@{identity["terminal_host"]}'))
+current.append(text(LEFT, y, "title", f'{identity["username"]}@{identity["terminal_host"]}'))
 y += 26
-rows.append(text(LEFT, y, "dim", "-" * 78))
+current.append(text(LEFT, y, "dim", "-" * 78))
+flush_block()
 
 WHOAMI_VALUE_X = LEFT + 96
 
 y += CMD_TO_NEXT_BAR_GAP
-y = prompt_and_command(rows, y, PATH, BRANCH, DURATION, TIME_DISPLAY, "whoami")
+delay = len(blocks) * BLOCK_DELAY_STEP
+y = prompt_and_command(current, y, PATH, BRANCH, DURATION, TIME_DISPLAY, "whoami", delay + TYPE_DELAY_OFFSET)
 for key, value in [
     ("Role", identity.get("role", "")),
     ("University", identity.get("university", "")),
@@ -193,41 +222,50 @@ for key, value in [
     ("Location", identity.get("location", "")),
 ]:
     y += 28 if key == "Role" else LINE_H
-    rows.append(kv_row(LEFT, WHOAMI_VALUE_X, y, "mono", key, value))
+    current.append(kv_row(LEFT, WHOAMI_VALUE_X, y, "mono", key, value))
+flush_block()
 
 y += CMD_TO_NEXT_BAR_GAP
-y = prompt_and_command(rows, y, PATH, BRANCH, DURATION, TIME_DISPLAY, "research --current")
+delay = len(blocks) * BLOCK_DELAY_STEP
+y = prompt_and_command(current, y, PATH, BRANCH, DURATION, TIME_DISPLAY, "research --current", delay + TYPE_DELAY_OFFSET)
 for item in research.get("current", []):
     y += LINE_H
     status = item.get("status", "").upper()
     label = item.get("label", "")
-    rows.append(text(LEFT, y, status_class(status), f"[{status}] {label}"))
+    current.append(text(LEFT, y, status_class(status), f"[{status}] {label}"))
+flush_block()
 
 description = research.get("description", [])
 if description:
     y += CMD_TO_NEXT_BAR_GAP
-    y = prompt_and_command(rows, y, PATH, BRANCH, DURATION, TIME_DISPLAY, "cat research.txt")
+    delay = len(blocks) * BLOCK_DELAY_STEP
+    y = prompt_and_command(current, y, PATH, BRANCH, DURATION, TIME_DISPLAY, "cat research.txt", delay + TYPE_DELAY_OFFSET)
     for line in description:
         y += LINE_H
-        rows.append(text(LEFT, y, "mono", line))
+        current.append(text(LEFT, y, "mono", line))
+    flush_block()
 
 if stack:
     y += CMD_TO_NEXT_BAR_GAP
-    y = prompt_and_command(rows, y, PATH, BRANCH, DURATION, TIME_DISPLAY, "stack --list")
+    delay = len(blocks) * BLOCK_DELAY_STEP
+    y = prompt_and_command(current, y, PATH, BRANCH, DURATION, TIME_DISPLAY, "stack --list", delay + TYPE_DELAY_OFFSET)
     y += 28
-    rows.append(text(LEFT, y, "mono", " · ".join(stack)))
+    current.append(text(LEFT, y, "mono", " · ".join(stack)))
+    flush_block()
 
 ENV_VALUE_X = LEFT + 68
 
 if systems:
     y += CMD_TO_NEXT_BAR_GAP
-    y = prompt_and_command(rows, y, PATH, BRANCH, DURATION, TIME_DISPLAY, "env --list")
+    delay = len(blocks) * BLOCK_DELAY_STEP
+    y = prompt_and_command(current, y, PATH, BRANCH, DURATION, TIME_DISPLAY, "env --list", delay + TYPE_DELAY_OFFSET)
     y += 28
-    rows.append(kv_row(LEFT, ENV_VALUE_X, y, "mono", "OS", " · ".join(systems.get("os", []))))
+    current.append(kv_row(LEFT, ENV_VALUE_X, y, "mono", "OS", " · ".join(systems.get("os", []))))
     y += LINE_H
-    rows.append(kv_row(LEFT, ENV_VALUE_X, y, "mono", "Editor", systems.get("editor", "")))
+    current.append(kv_row(LEFT, ENV_VALUE_X, y, "mono", "Editor", systems.get("editor", "")))
     y += LINE_H
-    rows.append(kv_row(LEFT, ENV_VALUE_X, y, "mono", "WM", systems.get("wm", "")))
+    current.append(kv_row(LEFT, ENV_VALUE_X, y, "mono", "WM", systems.get("wm", "")))
+    flush_block()
 
 PID_X = LEFT
 NAME_X = LEFT + 42
@@ -235,9 +273,10 @@ STATUS_X = LEFT + 260
 
 if projects:
     y += CMD_TO_NEXT_BAR_GAP
-    y = prompt_and_command(rows, y, PATH, BRANCH, DURATION, TIME_DISPLAY, "projects --active")
+    delay = len(blocks) * BLOCK_DELAY_STEP
+    y = prompt_and_command(current, y, PATH, BRANCH, DURATION, TIME_DISPLAY, "projects --active", delay + TYPE_DELAY_OFFSET)
     y += 28
-    rows.append(
+    current.append(
         f'<text x="{PID_X}" y="{y}" class="dim">'
         f'<tspan x="{PID_X}">PID</tspan>'
         f'<tspan x="{NAME_X}">PROJECT</tspan>'
@@ -246,39 +285,56 @@ if projects:
     )
     for project in projects:
         y += LINE_H
-        rows.append(
+        current.append(
             f'<text x="{PID_X}" y="{y}" class="mono">'
             f'<tspan x="{PID_X}">{esc(project.get("pid", ""))}</tspan>'
             f'<tspan x="{NAME_X}">{esc(project.get("name", ""))}</tspan>'
             f'<tspan x="{STATUS_X}">{esc(project.get("status", ""))}</tspan>'
             f'</text>'
         )
+    flush_block()
 
 body_bottom = y + 30
 
 # --- 末尾: 次の入力を待つプロンプト (バー + 単独の $character、コマンドなし) ---
 final_bar_svg, final_bar_bottom = prompt_bar(body_bottom, PATH, BRANCH, DURATION, TIME_DISPLAY)
-rows.extend(final_bar_svg)
+current.extend(final_bar_svg)
 character_baseline = final_bar_bottom + BAR_TO_CMD_GAP
-rows.append(
+current.append(
     f'<text x="{LEFT}" y="{character_baseline}" class="promptchar" font-weight="bold">&#10095;</text>'
 )
-rows.append(
+current.append(
     f'<rect x="{LEFT + 14}" y="{character_baseline - 11}" width="6" height="13" rx="1" class="cursor"/>'
 )
+flush_block()
 
 height = character_baseline + 20
+
+# ブロックを <g class="reveal"> でラップし、出現順に少しずつ遅延させる
+reveal_svg = []
+for i, block in enumerate(blocks):
+    d = i * BLOCK_DELAY_STEP
+    reveal_svg.append(f'<g class="reveal" style="animation-delay:{d:.2f}s">{"".join(block)}</g>')
 
 # --- タブバー (信号ボタン行 + タブ行の2段構成) ---
 DOT_ROW_H = 30
 TAB_ROW_H = 26
 HEADER_H = DOT_ROW_H + TAB_ROW_H
 tab_label = "zsh"
-tab_w = round(len(tab_label) * 7.2) + 26
+tab_w = round(len(tab_label) * 7.2) + 14
 tab_x = 16
 tab_skew = 7
 
 svg = f"""<svg width="{WIDTH}" height="{height}" viewBox="0 0 {WIDTH} {height}" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <pattern id="scanlines" width="100%" height="4" patternUnits="userSpaceOnUse">
+      <rect width="100%" height="2" fill="#000000" opacity="0.35"/>
+    </pattern>
+    <radialGradient id="vignette" cx="50%" cy="42%" r="75%">
+      <stop offset="60%" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.35"/>
+    </radialGradient>
+  </defs>
   <style>
     text {{ font-family: {FONT}; }}
     .bg {{ fill: {BG}; }}
@@ -296,6 +352,43 @@ svg = f"""<svg width="{WIDTH}" height="{height}" viewBox="0 0 {WIDTH} {height}" 
     .barright {{ font-size: {BAR_FONT}px; font-weight: 700; fill: {MUTED}; }}
     .cursor {{ fill: {CARET}; animation: blink 1s steps(2, start) infinite; }}
     @keyframes blink {{ 50% {{ opacity: 0; }} }}
+
+    /* タイピング再生 (1回完結): ブロックが上からフェード+スライドインで
+       順番に出現する。librsvg等の静的レンダラやreduced-motion環境は
+       @media を解釈できず/評価がfalseになり、下の「常に表示」がそのまま
+       効くようフォールバックにしている (これが無いと、アニメーション未再生の
+       環境で opacity:0 のまま止まって真っ黒に見えてしまう)。 */
+    .reveal {{ opacity: 1; }}
+    .typeline {{ display: inline-block; clip-path: inset(0 0 0 0); }}
+    @media (prefers-reduced-motion: no-preference) {{
+      .reveal {{
+        opacity: 0;
+        transform: translateY(5px);
+        animation: revealIn 0.5s ease-out both;
+      }}
+      /* コマンド文字列だけ、バーの出現から少し遅れて左→右にタイプされる演出 */
+      .typeline {{
+        clip-path: inset(0 100% 0 0);
+        animation: typeReveal 0.5s steps(18, end) both;
+      }}
+    }}
+    @keyframes revealIn {{
+      from {{ opacity: 0; transform: translateY(5px); }}
+      to   {{ opacity: 1; transform: translateY(0); }}
+    }}
+    @keyframes typeReveal {{
+      to {{ clip-path: inset(0 0 0 0); }}
+    }}
+
+    /* 常時ループするスキャンライン(CRT風の走査線) */
+    .scanlines {{
+      mix-blend-mode: overlay;
+      animation: scanmove 5s linear infinite;
+    }}
+    @keyframes scanmove {{
+      from {{ transform: translateY(0); }}
+      to   {{ transform: translateY(4px); }}
+    }}
   </style>
 
   <rect x="0.75" y="0.75" width="{WIDTH-1.5}" height="{height-1.5}" rx="12" class="bg border"/>
@@ -311,7 +404,10 @@ svg = f"""<svg width="{WIDTH}" height="{height}" viewBox="0 0 {WIDTH} {height}" 
   <polygon points="{tab_x},{DOT_ROW_H} {tab_x+tab_skew},{HEADER_H} {tab_x+tab_w+tab_skew},{HEADER_H} {tab_x+tab_w},{DOT_ROW_H}" fill="{ACCENT}"/>
   {text(tab_x + tab_w/2 + tab_skew/2, DOT_ROW_H + TAB_ROW_H*0.68, "tabtext", tab_label, anchor="middle")}
 
-  {"".join(rows)}
+  {"".join(reveal_svg)}
+
+  <rect x="0.75" y="{HEADER_H}" width="{WIDTH-1.5}" height="{height-HEADER_H-0.75}" fill="url(#scanlines)" class="scanlines" pointer-events="none"/>
+  <rect x="0.75" y="0.75" width="{WIDTH-1.5}" height="{height-1.5}" rx="12" fill="url(#vignette)" pointer-events="none"/>
 </svg>
 """
 
