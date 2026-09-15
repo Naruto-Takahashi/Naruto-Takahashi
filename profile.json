@@ -36,8 +36,9 @@
     "ghq"
   ],
   "prompt": {
-    "badge": "nixcli in wezterm",
     "path": "~/Naruto-Takahashi",
-    "branch": "main"
+    "branch": "main",
+    "cmd_duration": "0s",
+    "time": "14:36"
   }
 }

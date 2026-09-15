@@ -175,15 +175,27 @@ if projects:
 body_bottom = y + 30
 
 # --- Starship 風 powerline プロンプト (下部バー) ---
-# セグメント構成: nixcli_badge(tertiary) -> directory(accent) -> git_branch/status(dark) -> character
+# 実際の starship.toml (modules/shell/starship/starship.toml) の format に合わせる:
+#   $directory -> [](fg:accent bg:dark) -> $git_branch$git_status -> [](fg:dark) -> \n$character
+#   right_format = "$cmd_duration$time"  (1行目の右端に表示される)
+# コンテナ内(nixcli_badge)/SSH接続時(ssh_host)のバッジは通常環境では表示されない
+# ため(実機スクリーンショットで確認済み)、このモックでも省略する。
+# git_branch の symbol は U+F418 (nf-oct-git_branch)、cmd_duration/time の区切り
+# アイコンは U+E0B3 (powerline的な小さな山形) を実設定のまま焼き込む。
+GIT_BRANCH_ICON = ""
+SEGMENT_ICON = ""
+cmd_duration = prompt.get("cmd_duration", "0s")
+time_display = prompt.get("time", "00:00")
+
 PROMPT_H = 24
+LINE_GAP = 14
 prompt_y_top = body_bottom + 10
 prompt_baseline = prompt_y_top + PROMPT_H / 2 + 4
 bar_bottom = prompt_y_top + PROMPT_H
+character_baseline = bar_bottom + LINE_GAP + 14
 
-badge_text = f' {prompt.get("badge", "")} '
 dir_text = f' {prompt.get("path", "")} '
-git_text = f' {prompt.get("branch", "")} '
+git_text = f' {GIT_BRANCH_ICON} {prompt.get("branch", "")} '
 
 CHAR_W = 6.2
 PAD = 4
@@ -192,9 +204,8 @@ ARROW_W = 8  # powerline矢印の突き出し幅
 def seg_width(s):
     return round(len(s) * CHAR_W) + PAD * 2
 
-# セグメント定義: (表示文字, 背景色, 文字色)
+# セグメント定義: (表示文字, 背景色, 文字色) -- directory(accent) -> git_branch(dark)
 segments = [
-    (badge_text, TERTIARY, ON_ACCENT),
     (dir_text, ACCENT, ON_ACCENT),
     (git_text, DARK, ACCENT),
 ]
@@ -216,7 +227,7 @@ for value, bg_color, fg_color in segments:
 
 # powerline矢印: 各セグメント境界に、手前の色で右向き三角形を重ね描きする
 # (先に全セグメントのrectを描画してから矢印を上に重ねることで、次のセグメントに
-#  食い込む矢印が隠れずに見える)
+#  食い込む矢印が隠れずに見える)。最後の矢印はdark色のままプレーンな背景に抜ける。
 for boundary, (_, bg_color, _) in zip(bounds, segments):
     th = PROMPT_H / 2
     arrow_svg.append(
@@ -224,17 +235,31 @@ for boundary, (_, bg_color, _) in zip(bounds, segments):
         f'{boundary},{bar_bottom}" fill="{bg_color}"/>'
     )
 
-arrow_x = seg_x + ARROW_W + 8
 prompt_svg = rect_svg + arrow_svg + seg_text_svg
+
+# right_format = "$cmd_duration$time" : 背景なしの装飾テキストとして右端に配置
+duration_text = f'{SEGMENT_ICON} {cmd_duration}'
+time_text = f'{SEGMENT_ICON} {time_display}'
+right_edge = WIDTH - LEFT
+time_w = seg_width(time_text) + 8
+duration_w = seg_width(duration_text) + 8
 prompt_svg.append(
-    f'<text x="{arrow_x}" y="{prompt_baseline}" class="promptseg" fill="{SECONDARY}" '
-    f'font-weight="bold">&#10095;</text>'
+    f'<text x="{right_edge}" y="{prompt_baseline}" class="promptright" text-anchor="end">{esc(time_text)}</text>'
 )
 prompt_svg.append(
-    f'<rect x="{arrow_x + 14}" y="{prompt_baseline - 11}" width="6" height="13" rx="1" class="cursor"/>'
+    f'<text x="{right_edge - time_w}" y="{prompt_baseline}" class="promptright" text-anchor="end">{esc(duration_text)}</text>'
 )
 
-height = bar_bottom + 16
+# $character は format 上で改行(\n)を挟んだ次の行に単独で描かれる
+# (プロンプトバッジと同じ行には続かない)
+prompt_svg.append(
+    f'<text x="{LEFT}" y="{character_baseline}" class="promptchar" font-weight="bold">&#10095;</text>'
+)
+prompt_svg.append(
+    f'<rect x="{LEFT + 14}" y="{character_baseline - 11}" width="6" height="13" rx="1" class="cursor"/>'
+)
+
+height = character_baseline + 12
 
 # --- タブバー (信号ボタン行 + タブ行の2段構成) ---
 DOT_ROW_H = 30
@@ -253,13 +278,14 @@ svg = f"""<svg width="{WIDTH}" height="{height}" viewBox="0 0 {WIDTH} {height}" 
     .mono {{ font-size: 14px; fill: {FG}; }}
     .title {{ font-size: 16px; font-weight: 700; fill: {ACCENT}; }}
     .cmdline {{ font-size: 14px; fill: {FG}; }}
-    .promptchar {{ fill: {SECONDARY}; }}
+    .promptchar {{ fill: {SECONDARY}; font-size: 14px; }}
     .dim {{ font-size: 14px; fill: {DIM}; }}
     .green {{ font-size: 14px; fill: {DRAGON_GREEN}; }}
     .yellow {{ font-size: 14px; fill: {DRAGON_YELLOW}; }}
     .accent {{ font-size: 14px; fill: {ACCENT}; }}
     .tabtext {{ font-size: 12px; fill: {ON_ACCENT}; font-weight: 700; }}
     .promptseg {{ font-size: 12px; }}
+    .promptright {{ font-size: 12px; font-weight: 700; fill: {MUTED}; }}
     .cursor {{ fill: {CARET}; animation: blink 1s steps(2, start) infinite; }}
     @keyframes blink {{ 50% {{ opacity: 0; }} }}
   </style>
