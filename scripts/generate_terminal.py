@@ -52,6 +52,19 @@ def text(x, y, cls, value, anchor=None, weight=None):
     return f'<text x="{x}" y="{y}" class="{cls}"{attrs}>{esc(value)}</text>'
 
 
+def kv_row(x, value_x, y, cls, key, value):
+    # HackGen Console NF は閲覧者の大半の環境に入っておらず、フォールバック
+    # フォント(Menlo/Consolas等)では文字幅が変わるため、key部分をスペース
+    # パディングして揃える方式だと列がズレる。key/valueそれぞれを固定x座標の
+    # <tspan> に分けることで、フォントに関わらず値の開始位置を揃える。
+    return (
+        f'<text x="{x}" y="{y}" class="{cls}">'
+        f'<tspan x="{x}">{esc(key)}</tspan>'
+        f'<tspan x="{value_x}">{esc(value)}</tspan>'
+        f'</text>'
+    )
+
+
 def cmd_prompt(x, y, cmd):
     # Starship の character モジュール (secondary色の ❯) を模した実行済みコマンド行
     return (
@@ -87,6 +100,8 @@ rows.append(text(LEFT, y, "title", f'{identity["username"]}@{identity["terminal_
 y += 26
 rows.append(text(LEFT, y, "dim", "-" * 78))
 
+WHOAMI_VALUE_X = LEFT + 96
+
 y += 36
 rows.append(cmd_prompt(LEFT, y, "whoami"))
 for key, value in [
@@ -96,7 +111,7 @@ for key, value in [
     ("Location", identity.get("location", "")),
 ]:
     y += 28 if key == "Role" else LINE_H
-    rows.append(text(LEFT, y, "mono", f"{key:<11} {value}"))
+    rows.append(kv_row(LEFT, WHOAMI_VALUE_X, y, "mono", key, value))
 
 y += 40
 rows.append(cmd_prompt(LEFT, y, "research --current"))
@@ -120,27 +135,42 @@ if stack:
     y += 28
     rows.append(text(LEFT, y, "mono", " · ".join(stack)))
 
+ENV_VALUE_X = LEFT + 68
+
 if systems:
     y += 40
     rows.append(cmd_prompt(LEFT, y, "env --list"))
     y += 28
-    rows.append(text(LEFT, y, "mono", f'{"OS":<8} {" · ".join(systems.get("os", []))}'))
+    rows.append(kv_row(LEFT, ENV_VALUE_X, y, "mono", "OS", " · ".join(systems.get("os", []))))
     y += LINE_H
-    rows.append(text(LEFT, y, "mono", f'{"Editor":<8} {systems.get("editor", "")}'))
+    rows.append(kv_row(LEFT, ENV_VALUE_X, y, "mono", "Editor", systems.get("editor", "")))
     y += LINE_H
-    rows.append(text(LEFT, y, "mono", f'{"WM":<8} {systems.get("wm", "")}'))
+    rows.append(kv_row(LEFT, ENV_VALUE_X, y, "mono", "WM", systems.get("wm", "")))
+
+PID_X = LEFT
+NAME_X = LEFT + 42
+STATUS_X = LEFT + 260
 
 if projects:
     y += 40
     rows.append(cmd_prompt(LEFT, y, "projects --active"))
     y += 28
-    rows.append(text(LEFT, y, "dim", f'{"PID":<5} {"PROJECT":<31} STATUS'))
+    rows.append(
+        f'<text x="{PID_X}" y="{y}" class="dim">'
+        f'<tspan x="{PID_X}">PID</tspan>'
+        f'<tspan x="{NAME_X}">PROJECT</tspan>'
+        f'<tspan x="{STATUS_X}">STATUS</tspan>'
+        f'</text>'
+    )
     for project in projects:
         y += LINE_H
-        rows.append(text(
-            LEFT, y, "mono",
-            f'{project.get("pid",""):<5} {project.get("name",""):<31} {project.get("status","")}'
-        ))
+        rows.append(
+            f'<text x="{PID_X}" y="{y}" class="mono">'
+            f'<tspan x="{PID_X}">{esc(project.get("pid", ""))}</tspan>'
+            f'<tspan x="{NAME_X}">{esc(project.get("name", ""))}</tspan>'
+            f'<tspan x="{STATUS_X}">{esc(project.get("status", ""))}</tspan>'
+            f'</text>'
+        )
 
 body_bottom = y + 30
 
