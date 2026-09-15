@@ -376,7 +376,12 @@ if systems:
 
 PID_X = LEFT
 NAME_X = LEFT + 42
-STATUS_X = LEFT + 260
+# HackGen Console NF が無い環境(特にスマホのブラウザ)ではフォールバックの
+# monospaceフォントの字幅がPCより広くなり、固定260pxだと長いproject名の
+# 末尾とSTATUS列が詰まって見えていた。フォールバック環境でも余裕を持てる
+# ように、実際のproject名の最大長から必要幅を計算して確保する。
+_max_name_len = max([len(pr.get("name", "")) for pr in projects], default=0)
+STATUS_X = NAME_X + max(218, round(_max_name_len * 9.5) + 20)
 
 if projects:
     y += CMD_TO_NEXT_BAR_GAP
