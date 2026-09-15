@@ -49,15 +49,14 @@ DARK = "#272a2f"
 
 # --- 実際の starship.toml (modules/shell/starship/starship.toml) の format:
 #   $directory -> [](fg:accent bg:dark) -> $git_branch$git_status -> [](fg:dark) -> \n$character
-#   right_format = "$cmd_duration$time"
 # 実機では各コマンド実行のたびにこのプロンプトブロックが表示される
 # (1回だけ末尾に出るのではない) ため、コマンド行ごとに描画する。
-# git_branch の symbol は U+F418 (nf-oct-git_branch)。
-# cmd_duration/timeの区切りアイコンは以前 U+E0B3 (Nerd Font) を使っていたが、
-# 大半の閲覧者のブラウザにそのフォントが無くグリフが表示されない
-# (文字だけ消えて見える) 問題があったため、フォントに依存しない
-# ベクターのシェブロン(<)をpathで直接描く方式に変更した。
-GIT_BRANCH_ICON = ""
+# right_format の $cmd_duration$time は表示が細かすぎて情報量に見合わない
+# ノイズだったため廃止し、directory/git_branchのバーだけに絞った。
+# git_branch のアイコンは以前 Nerd Font の PUA コードポイント(U+F418)を
+# 使っていたが、そのフォントを持たない閲覧者のブラウザではグリフが
+# 表示されず消えて見える問題があったため、フォント非依存のベクターpathで
+# 小さな branch アイコンを直接描く方式にしている。
 
 # バー自体は実機のように細く (フォントサイズ・パディングを本文より一段階小さく)
 BAR_H = 15
@@ -67,14 +66,17 @@ BAR_PAD = 3
 ARROW_W = 6
 BAR_TO_CMD_GAP = 22
 CMD_TO_NEXT_BAR_GAP = 30
+GIT_ICON_W = 18  # branchアイコン用に確保する幅 (powerline矢印の食い込み分+アイコン本体+余白)
 
-# 右側の cmd_duration/time チェブロンのサイズと文字との間隔
-CHEVRON_W = 6
-CHEVRON_GAP = 5
-
-# ブロック間の「打ち終わってから次のバーが出るまで」の一定ポーズ
-POST_TYPE_GAP = 0.35
+# タイピング再生のタイムライン制御:
+#   バー出現 -> (TYPE_DELAY_OFFSET後) タイプ開始 -> 打ち終わり
+#   -> (ENTER_PAUSE後、Enterを押したイメージ) 出力がフェードイン
+#   -> (OUTPUT_REVEAL_DUR+POST_GAP後) 次のコマンドのバーが出現
+# の順を守ることで、「打ち終わる前に結果が出る」不自然さを無くしている。
 TYPE_DELAY_OFFSET = 0.12
+ENTER_PAUSE = 0.15
+OUTPUT_REVEAL_DUR = 0.5
+POST_GAP = 0.3
 
 
 def type_duration(cmd):
@@ -120,77 +122,88 @@ def bar_seg_width(s):
     return round(len(s) * BAR_CHAR_W) + BAR_PAD * 2
 
 
-def prompt_bar(y_top, path, branch, duration, time_display):
-    """Starship の $directory -> $git_branch powerlineバー(右にduration/time)を描く．"""
+def git_branch_icon_svg(cx, cy, color):
+    """Nerd Fontのグリフに頼らず、フォーク型の小さなgit branchアイコンを
+    ベクターpathで直接描く(閲覧者の環境を問わず必ず表示される)。"""
+    r = 1.5
+    top = (cx - 3, cy - 4.5)
+    bottom = (cx - 3, cy + 4.5)
+    branch = (cx + 3, cy - 2.5)
+    return (
+        f'<g stroke="{color}" stroke-width="1.3" fill="none" stroke-linecap="round">'
+        f'<line x1="{top[0]}" y1="{top[1]+r}" x2="{bottom[0]}" y2="{bottom[1]-r}"/>'
+        f'<path d="M {top[0]} {cy-0.5} C {top[0]+2.5} {cy-0.5} {branch[0]-2.5} {branch[1]} {branch[0]} {branch[1]}"/>'
+        f'</g>'
+        f'<circle cx="{top[0]}" cy="{top[1]}" r="{r}" fill="{color}"/>'
+        f'<circle cx="{bottom[0]}" cy="{bottom[1]}" r="{r}" fill="{color}"/>'
+        f'<circle cx="{branch[0]}" cy="{branch[1]}" r="{r}" fill="{color}"/>'
+    )
+
+
+def prompt_bar(y_top, path, branch):
+    """Starship の $directory -> $git_branch powerlineバーを描く。"""
     bar_bottom = y_top + BAR_H
     baseline = y_top + BAR_H / 2 + 3.2
+    icon_cy = y_top + BAR_H / 2
 
     dir_text = f' {path} '
-    git_text = f'  {GIT_BRANCH_ICON} {branch} '
-    segments = [
-        (dir_text, ACCENT, ON_ACCENT),
-        (git_text, DARK, ACCENT),
+    dir_w = bar_seg_width(dir_text)
+
+    branch_label = f' {branch} '
+    branch_label_w = bar_seg_width(branch_label)
+    git_w = GIT_ICON_W + branch_label_w
+
+    segments_geometry = [
+        (LEFT, dir_w),
+        (LEFT + dir_w, git_w),
     ]
 
-    seg_x = LEFT
-    rect_svg, seg_text_svg, arrow_svg, bounds = [], [], [], []
-    for value, bg_color, fg_color in segments:
-        w = bar_seg_width(value)
-        rect_svg.append(f'<rect x="{seg_x}" y="{y_top}" width="{w}" height="{BAR_H}" fill="{bg_color}"/>')
-        seg_text_svg.append(
-            f'<text x="{seg_x + w/2}" y="{baseline}" class="barseg" '
-            f'text-anchor="middle" fill="{fg_color}" font-weight="bold">{esc(value)}</text>'
-        )
-        bounds.append(seg_x + w)
-        seg_x += w
+    rect_svg = [
+        f'<rect x="{LEFT}" y="{y_top}" width="{dir_w}" height="{BAR_H}" fill="{ACCENT}"/>',
+        f'<rect x="{LEFT + dir_w}" y="{y_top}" width="{git_w}" height="{BAR_H}" fill="{DARK}"/>',
+    ]
+
+    dir_text_svg = (
+        f'<text x="{LEFT + dir_w/2}" y="{baseline}" class="barseg" '
+        f'text-anchor="middle" fill="{ON_ACCENT}" font-weight="bold">{esc(dir_text)}</text>'
+    )
+
+    git_seg_x = LEFT + dir_w
+    # powerline矢印(ARROW_W幅、accent色)がgitセグメントの左端に食い込んでいるため、
+    # アイコンをaccent色そのままで置くとそこに埋もれて見えなくなる。矢印の外側
+    # (dark背景の上)まで押し出して配置する。
+    icon_cx = git_seg_x + ARROW_W + BAR_PAD + 3
+    icon_svg = git_branch_icon_svg(icon_cx, icon_cy, ACCENT)
+    branch_text_svg = (
+        f'<text x="{git_seg_x + GIT_ICON_W}" y="{baseline}" class="barseg" '
+        f'fill="{ACCENT}" font-weight="bold">{esc(branch_label)}</text>'
+    )
 
     # powerline矢印: 各セグメント境界に、手前の色で右向き三角形を重ね描きする
     # (先に全セグメントのrectを描画してから矢印を上に重ねることで、次のセグメントに
     #  食い込む矢印が隠れずに見える)。最後の矢印はdark色のままプレーンな背景に抜ける。
-    for boundary, (_, bg_color, _) in zip(bounds, segments):
+    arrow_svg = []
+    for x, w in segments_geometry:
+        boundary = x + w
+        bg_color = ACCENT if x == LEFT else DARK
         th = BAR_H / 2
         arrow_svg.append(
             f'<polygon points="{boundary},{y_top} {boundary+ARROW_W},{y_top+th} '
             f'{boundary},{bar_bottom}" fill="{bg_color}"/>'
         )
 
-    svg = rect_svg + arrow_svg + seg_text_svg
-
-    # right_format = "$cmd_duration$time" : 背景なしの装飾テキストとして右端に配置。
-    # 区切りには「遊び心」としてシェブロンをただの静止アイコンにせず、
-    # ゆっくり明滅しながら左にちょいちょい動く小さなアニメーションを付けている
-    # (フォントアイコン任せをやめてpathで直接描画するので、環境に関わらず必ず見える)。
-    def right_group(x_right, value, key):
-        w = bar_seg_width(f' {value}')
-        text_x = x_right - w
-        chevron_cx = text_x - CHEVRON_GAP - CHEVRON_W / 2
-        chevron = (
-            f'<path class="chevron" style="animation-delay:{key*0.35:.2f}s" '
-            f'd="M {chevron_cx + CHEVRON_W/2} {baseline - 5} '
-            f'L {chevron_cx - CHEVRON_W/2} {baseline - 1} '
-            f'L {chevron_cx + CHEVRON_W/2} {baseline + 3}" '
-            f'fill="none" stroke="{MUTED}" stroke-width="1.4" '
-            f'stroke-linecap="round" stroke-linejoin="round"/>'
-        )
-        value_svg = f'<text x="{text_x}" y="{baseline}" class="barright">{esc(value)}</text>'
-        return chevron + value_svg, text_x - CHEVRON_GAP - CHEVRON_W
-
-    right_edge = WIDTH - LEFT
-    time_svg, time_left = right_group(right_edge, time_display, 0)
-    duration_svg, _ = right_group(time_left - 10, duration, 1)
-    svg.append(duration_svg)
-    svg.append(time_svg)
+    svg = rect_svg + arrow_svg + [dir_text_svg, icon_svg, branch_text_svg]
     return svg, bar_bottom
 
 
-def prompt_and_command(block_svg, y_top, path, branch, duration, time_display, cmd, type_delay, variant=0):
+def prompt_and_command(block_svg, y_top, path, branch, cmd, type_delay, variant=0):
     """バー(パス/ブランチ) + 実行済みコマンド行 ($character 相当) を描き、
     コマンド行のbaseline(y)を返す。実機同様、コマンドを打つたびにバーが出る。
     コマンド文字列自体は type_delay 秒後にタイプ演出(clip-pathの左→右ワイプ)で
     出現させ、キーを打っている雰囲気を出す。打鍵速度が一律だと不自然なため、
     文字数に応じた長さ(type_duration)と、2種類の緩急パターン(variant)を
     交互に割り当てて速度にばらつきを持たせている。"""
-    bar_svg, bar_bottom = prompt_bar(y_top, path, branch, duration, time_display)
+    bar_svg, bar_bottom = prompt_bar(y_top, path, branch)
     block_svg.extend(bar_svg)
     cmd_y = bar_bottom + BAR_TO_CMD_GAP
     dur = type_duration(cmd)
@@ -217,8 +230,6 @@ prompt = p.get("prompt", {})
 
 PATH = prompt.get("path", "")
 BRANCH = prompt.get("branch", "")
-DURATION = prompt.get("cmd_duration", "0s")
-TIME_DISPLAY = prompt.get("time", "00:00")
 
 # ブロック単位で貯めて、最後にまとめて <g class="reveal"> でラップする。
 # (「タイピング再生」演出: ブロックが上から順に、少しずつ遅れて出現する)
@@ -244,20 +255,26 @@ y += 26
 current.append(text(LEFT, y, "dim", "-" * 78))
 flush_block()
 
-# ブロックの出現ディレイは、直前のコマンドの「打ち終わり」からの経過で
-# 積み上げていく (固定間隔だと文字数によらず一律のテンポになってしまうため)。
+# タイムライン: バー出現 -> タイプ -> (Enter想定のポーズ) -> 出力フェードイン
+# -> 次のバー、の順で経過時間を積み上げていく。バー+コマンド行はその場で
+# 独立したブロックとして即座にflushし、出力側は呼び出し元がoutput_delayを
+# 使って別ブロックとして後からflushすることで、「打ち終わる前に結果が
+# 表示される」不自然さを避けている。
 total_delay = 0.4
 variant = 0
+output_delay = 0.0
 
 
 def run_command(y, cmd):
-    global total_delay, variant, pending_delay
-    delay = total_delay
-    pending_delay = delay
-    cmd_y, dur = prompt_and_command(
-        current, y, PATH, BRANCH, DURATION, TIME_DISPLAY, cmd, delay + TYPE_DELAY_OFFSET, variant
-    )
-    total_delay = delay + TYPE_DELAY_OFFSET + dur + POST_TYPE_GAP
+    global total_delay, variant, output_delay
+    d_bar = total_delay
+    cmd_block = []
+    cmd_y, dur = prompt_and_command(cmd_block, y, PATH, BRANCH, cmd, d_bar + TYPE_DELAY_OFFSET, variant)
+    blocks.append(cmd_block)
+    block_delays.append(d_bar)
+
+    output_delay = d_bar + TYPE_DELAY_OFFSET + dur + ENTER_PAUSE
+    total_delay = output_delay + OUTPUT_REVEAL_DUR + POST_GAP
     variant = 1 - variant
     return cmd_y
 
@@ -266,6 +283,7 @@ WHOAMI_VALUE_X = LEFT + 96
 
 y += CMD_TO_NEXT_BAR_GAP
 y = run_command(y, "whoami")
+pending_delay = output_delay
 for key, value in [
     ("Role", identity.get("role", "")),
     ("University", identity.get("university", "")),
@@ -278,6 +296,7 @@ flush_block()
 
 y += CMD_TO_NEXT_BAR_GAP
 y = run_command(y, "research --current")
+pending_delay = output_delay
 for item in research.get("current", []):
     y += LINE_H
     status = item.get("status", "").upper()
@@ -289,6 +308,7 @@ description = research.get("description", [])
 if description:
     y += CMD_TO_NEXT_BAR_GAP
     y = run_command(y, "cat research.txt")
+    pending_delay = output_delay
     for line in description:
         y += LINE_H
         current.append(text(LEFT, y, "mono", line))
@@ -297,6 +317,7 @@ if description:
 if stack:
     y += CMD_TO_NEXT_BAR_GAP
     y = run_command(y, "stack --list")
+    pending_delay = output_delay
     y += 28
     current.append(text(LEFT, y, "mono", " · ".join(stack)))
     flush_block()
@@ -306,6 +327,7 @@ ENV_VALUE_X = LEFT + 68
 if systems:
     y += CMD_TO_NEXT_BAR_GAP
     y = run_command(y, "env --list")
+    pending_delay = output_delay
     y += 28
     current.append(kv_row(LEFT, ENV_VALUE_X, y, "mono", "OS", " · ".join(systems.get("os", []))))
     y += LINE_H
@@ -321,6 +343,7 @@ STATUS_X = LEFT + 260
 if projects:
     y += CMD_TO_NEXT_BAR_GAP
     y = run_command(y, "projects --active")
+    pending_delay = output_delay
     y += 28
     current.append(
         f'<text x="{PID_X}" y="{y}" class="dim">'
@@ -344,7 +367,7 @@ body_bottom = y + 30
 
 # --- 末尾: 次の入力を待つプロンプト (バー + 単独の $character、コマンドなし) ---
 pending_delay = total_delay
-final_bar_svg, final_bar_bottom = prompt_bar(body_bottom, PATH, BRANCH, DURATION, TIME_DISPLAY)
+final_bar_svg, final_bar_bottom = prompt_bar(body_bottom, PATH, BRANCH)
 current.extend(final_bar_svg)
 character_baseline = final_bar_bottom + BAR_TO_CMD_GAP
 current.append(
@@ -395,7 +418,6 @@ svg = f"""<svg width="{WIDTH}" height="{height}" viewBox="0 0 {WIDTH} {height}" 
     .accent {{ font-size: 14px; fill: {ACCENT}; }}
     .tabtext {{ font-size: 12px; fill: {ON_ACCENT}; font-weight: 700; }}
     .barseg {{ font-size: {BAR_FONT}px; }}
-    .barright {{ font-size: {BAR_FONT}px; font-weight: 700; fill: {MUTED}; }}
     .cursor {{ fill: {CARET}; animation: blink 1s steps(2, start) infinite; }}
     @keyframes blink {{ 50% {{ opacity: 0; }} }}
 
@@ -458,21 +480,6 @@ svg = f"""<svg width="{WIDTH}" height="{height}" viewBox="0 0 {WIDTH} {height}" 
     @keyframes scanmove {{
       from {{ transform: translateY(0); }}
       to   {{ transform: translateY(4px); }}
-    }}
-
-    /* cmd_duration/time 区切りのシェブロン: 静止アイコンで終わらせず、
-       ゆっくり明滅しながら小さく左へ揺れるループを付けた小さな遊び心 */
-    .chevron {{ opacity: 0.85; }}
-    @media (prefers-reduced-motion: no-preference) {{
-      .chevron {{
-        animation: chevronPulse 2.6s ease-in-out infinite;
-        transform-box: fill-box;
-        transform-origin: center;
-      }}
-    }}
-    @keyframes chevronPulse {{
-      0%, 100% {{ opacity: 0.5; transform: translateX(0); }}
-      50%      {{ opacity: 1; transform: translateX(-1.5px); }}
     }}
   </style>
 
