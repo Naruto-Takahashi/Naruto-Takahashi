@@ -307,7 +307,7 @@ if stack:
 
 OS_X = LEFT
 WM_X = LEFT + 190
-EDITOR_X = LEFT + 330
+EDITOR_X = LEFT + 380  # "Hyprland + Waybar" 等の長いWM名とEditor列が近すぎたため広げた
 
 if systems:
     hosts = systems.get("hosts", [])
