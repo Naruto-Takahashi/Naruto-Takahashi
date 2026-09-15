@@ -355,11 +355,12 @@ if projects:
     )
     for project in projects:
         y += LINE_H
+        status = project.get("status", "")
         current.append(
             f'<text x="{PID_X}" y="{y}" class="mono">'
             f'<tspan x="{PID_X}">{esc(project.get("pid", ""))}</tspan>'
             f'<tspan x="{NAME_X}">{esc(project.get("name", ""))}</tspan>'
-            f'<tspan x="{STATUS_X}">{esc(project.get("status", ""))}</tspan>'
+            f'<tspan x="{STATUS_X}" class="{status_class(status)}">{esc(status)}</tspan>'
             f'</text>'
         )
     flush_block()
