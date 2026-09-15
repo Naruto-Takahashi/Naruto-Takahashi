@@ -522,7 +522,7 @@ svg = f"""<svg width="{WIDTH}" height="{height}" viewBox="0 0 {WIDTH} {height}" 
     .bg {{ fill: {BG}; }}
     .border {{ stroke: {BORDER}; stroke-width: 1.5; }}
     .mono {{ font-size: 14px; fill: {FG}; }}
-    .title {{ font-size: 16px; font-weight: 700; fill: {ACCENT}; }}
+    .title {{ font-size: 16px; font-weight: 700; fill: {TERTIARY}; }}
     .cmdline {{ font-size: 14px; fill: {FG}; }}
     .promptchar {{ fill: {SECONDARY}; font-size: 14px; }}
     .dim {{ font-size: 14px; fill: {DIM}; }}

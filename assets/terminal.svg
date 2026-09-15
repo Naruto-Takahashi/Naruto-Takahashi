@@ -13,7 +13,7 @@
     .bg { fill: #181616; }
     .border { stroke: #282727; stroke-width: 1.5; }
     .mono { font-size: 14px; fill: #c5c9c5; }
-    .title { font-size: 16px; font-weight: 700; fill: #a2c9fd; }
+    .title { font-size: 16px; font-weight: 700; fill: #d7bde4; }
     .cmdline { font-size: 14px; fill: #c5c9c5; }
     .promptchar { fill: #bbc7db; font-size: 14px; }
     .dim { font-size: 14px; fill: #737c73; }
