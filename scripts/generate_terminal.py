@@ -117,6 +117,28 @@ def kv_row(x, value_x, y, cls, key, value):
     )
 
 
+# HackGen Console NF を持たない環境(特にスマホのブラウザ)では、フォールバック
+# monospaceフォントの字幅がPCより広くなる。列を固定pxで並べる箇所はどこでも
+# 同じ問題(長い項目が次列に食い込んで見える)が起き得るため、実際の内容の
+# 最大文字数から必要幅を逆算する column_x() に一本化する。
+SAFE_CHAR_W = 9.5  # フォールバックフォントでも重ならない安全側の1文字あたりの幅(px)
+COL_GAP = 20        # 列間の最低余白(px)
+
+
+def column_x(start_x, *col_samples):
+    """各列の開始x座標を、直前列の内容の最大文字数から計算して返す。
+    col_samples には2列目以降それぞれについて、その列の「直前」に来る列の
+    セル文字列(ヘッダも含めてよい)のリストを渡す。返り値の長さは
+    len(col_samples) + 1 (先頭は常に start_x)。"""
+    xs = [start_x]
+    x = start_x
+    for samples in col_samples:
+        max_len = max((len(s) for s in samples), default=0)
+        x += round(max_len * SAFE_CHAR_W) + COL_GAP
+        xs.append(x)
+    return xs
+
+
 def status_class(status):
     return {
         "RUNNING": "green",
@@ -307,8 +329,6 @@ def run_command(y, cmd):
     return cmd_y
 
 
-WHOAMI_VALUE_X = LEFT + 96
-
 # ブロックの並び順: whoami(自己紹介) -> stack/env(スキル・環境) ->
 # projects(取り組んでいること) -> research(いま推している研究テーマの詳細)。
 # 「何者か」を固めてから「何を使っているか」「何をしているか」に進み、
@@ -316,14 +336,16 @@ WHOAMI_VALUE_X = LEFT + 96
 y += CMD_TO_NEXT_BAR_GAP
 y = run_command(y, "whoami")
 pending_delay = output_delay
-for key, value in [
+whoami_rows = [
     ("Role", identity.get("role", "")),
     ("University", identity.get("university", "")),
     ("Lab", identity.get("lab", "")),
     ("Location", identity.get("location", "")),
-]:
+]
+KEY_X, VALUE_X = column_x(LEFT, [key for key, _ in whoami_rows])
+for key, value in whoami_rows:
     y += 28 if key == "Role" else LINE_H
-    current.append(kv_row(LEFT, WHOAMI_VALUE_X, y, "mono", key, value))
+    current.append(kv_row(KEY_X, VALUE_X, y, "mono", key, value))
 flush_block()
 
 if stack:
@@ -342,13 +364,14 @@ if stack:
     current.append(f'<text x="{LEFT}" y="{y}" class="mono">{"".join(lang_spans)}</text>')
     flush_block()
 
-OS_X = LEFT
-WM_X = LEFT + 190
-EDITOR_X = LEFT + 380  # "Hyprland + Waybar" 等の長いWM名とEditor列が近すぎたため広げた
-
 if systems:
     hosts = systems.get("hosts", [])
     editor = systems.get("editor", "")
+    OS_X, WM_X, EDITOR_X = column_x(
+        LEFT,
+        [h.get("os", "") for h in hosts] + ["OS"],
+        [h.get("wm", "") for h in hosts] + ["WM"],
+    )
     y += CMD_TO_NEXT_BAR_GAP
     y = run_command(y, "env --list")
     pending_delay = output_delay
@@ -374,16 +397,12 @@ if systems:
         )
     flush_block()
 
-PID_X = LEFT
-NAME_X = LEFT + 42
-# HackGen Console NF が無い環境(特にスマホのブラウザ)ではフォールバックの
-# monospaceフォントの字幅がPCより広くなり、固定260pxだと長いproject名の
-# 末尾とSTATUS列が詰まって見えていた。フォールバック環境でも余裕を持てる
-# ように、実際のproject名の最大長から必要幅を計算して確保する。
-_max_name_len = max([len(pr.get("name", "")) for pr in projects], default=0)
-STATUS_X = NAME_X + max(218, round(_max_name_len * 9.5) + 20)
-
 if projects:
+    PID_X, NAME_X, STATUS_X = column_x(
+        LEFT,
+        [pr.get("pid", "") for pr in projects] + ["PID"],
+        [pr.get("name", "") for pr in projects] + ["PROJECT"],
+    )
     y += CMD_TO_NEXT_BAR_GAP
     y = run_command(y, "projects --active")
     pending_delay = output_delay
