@@ -40,6 +40,25 @@ SECONDARY = "#bbc7db"
 MUTED = "#c3c6cf"
 DARK = "#272a2f"
 
+# --- 実際の starship.toml (modules/shell/starship/starship.toml) の format:
+#   $directory -> [](fg:accent bg:dark) -> $git_branch$git_status -> [](fg:dark) -> \n$character
+#   right_format = "$cmd_duration$time"
+# 実機では各コマンド実行のたびにこのプロンプトブロックが表示される
+# (1回だけ末尾に出るのではない) ため、コマンド行ごとに描画する。
+# git_branch の symbol は U+F418 (nf-oct-git_branch)、cmd_duration/time の
+# 区切りアイコンは U+E0B3 (powerline的な小さな山形) を実設定のまま焼き込む。
+GIT_BRANCH_ICON = ""
+SEGMENT_ICON = ""
+
+# バー自体は実機のように細く (フォントサイズ・パディングを本文より一段階小さく)
+BAR_H = 15
+BAR_FONT = 10
+BAR_CHAR_W = 5.1
+BAR_PAD = 3
+ARROW_W = 6
+BAR_TO_CMD_GAP = 22
+CMD_TO_NEXT_BAR_GAP = 30
+
 
 def esc(s):
     return escape(str(s))
@@ -65,15 +84,6 @@ def kv_row(x, value_x, y, cls, key, value):
     )
 
 
-def cmd_prompt(x, y, cmd):
-    # Starship の character モジュール (secondary色の ❯) を模した実行済みコマンド行
-    return (
-        f'<text x="{x}" y="{y}" class="cmdline">'
-        f'<tspan class="promptchar" font-weight="bold">&#10095;</tspan> {esc(cmd)}'
-        f'</text>'
-    )
-
-
 def status_class(status):
     return {
         "RUNNING": "green",
@@ -81,6 +91,73 @@ def status_class(status):
         "PAUSED": "dim",
         "DONE": "accent",
     }.get(status.upper(), "mono")
+
+
+def bar_seg_width(s):
+    return round(len(s) * BAR_CHAR_W) + BAR_PAD * 2
+
+
+def prompt_bar(y_top, path, branch, duration, time_display):
+    """Starship の $directory -> $git_branch powerlineバー(右にduration/time)を描く．"""
+    bar_bottom = y_top + BAR_H
+    baseline = y_top + BAR_H / 2 + 3.2
+
+    dir_text = f' {path} '
+    git_text = f' {GIT_BRANCH_ICON} {branch} '
+    segments = [
+        (dir_text, ACCENT, ON_ACCENT),
+        (git_text, DARK, ACCENT),
+    ]
+
+    seg_x = LEFT
+    rect_svg, seg_text_svg, arrow_svg, bounds = [], [], [], []
+    for value, bg_color, fg_color in segments:
+        w = bar_seg_width(value)
+        rect_svg.append(f'<rect x="{seg_x}" y="{y_top}" width="{w}" height="{BAR_H}" fill="{bg_color}"/>')
+        seg_text_svg.append(
+            f'<text x="{seg_x + w/2}" y="{baseline}" class="barseg" '
+            f'text-anchor="middle" fill="{fg_color}" font-weight="bold">{esc(value)}</text>'
+        )
+        bounds.append(seg_x + w)
+        seg_x += w
+
+    # powerline矢印: 各セグメント境界に、手前の色で右向き三角形を重ね描きする
+    # (先に全セグメントのrectを描画してから矢印を上に重ねることで、次のセグメントに
+    #  食い込む矢印が隠れずに見える)。最後の矢印はdark色のままプレーンな背景に抜ける。
+    for boundary, (_, bg_color, _) in zip(bounds, segments):
+        th = BAR_H / 2
+        arrow_svg.append(
+            f'<polygon points="{boundary},{y_top} {boundary+ARROW_W},{y_top+th} '
+            f'{boundary},{bar_bottom}" fill="{bg_color}"/>'
+        )
+
+    svg = rect_svg + arrow_svg + seg_text_svg
+
+    # right_format = "$cmd_duration$time" : 背景なしの装飾テキストとして右端に配置
+    duration_text = f'{SEGMENT_ICON} {duration}'
+    time_text = f'{SEGMENT_ICON} {time_display}'
+    right_edge = WIDTH - LEFT
+    time_w = bar_seg_width(time_text) + 8
+    svg.append(f'<text x="{right_edge}" y="{baseline}" class="barright" text-anchor="end">{esc(time_text)}</text>')
+    svg.append(
+        f'<text x="{right_edge - time_w}" y="{baseline}" class="barright" '
+        f'text-anchor="end">{esc(duration_text)}</text>'
+    )
+    return svg, bar_bottom
+
+
+def prompt_and_command(rows_svg, y_top, path, branch, duration, time_display, cmd):
+    """バー(パス/ブランチ) + 実行済みコマンド行 ($character 相当) を描き、
+    コマンド行のbaseline(y)を返す。実機同様、コマンドを打つたびにバーが出る。"""
+    bar_svg, bar_bottom = prompt_bar(y_top, path, branch, duration, time_display)
+    rows_svg.extend(bar_svg)
+    cmd_y = bar_bottom + BAR_TO_CMD_GAP
+    rows_svg.append(
+        f'<text x="{LEFT}" y="{cmd_y}" class="cmdline">'
+        f'<tspan class="promptchar" font-weight="bold">&#10095;</tspan> {esc(cmd)}'
+        f'</text>'
+    )
+    return cmd_y
 
 
 with PROFILE_PATH.open(encoding="utf-8") as f:
@@ -93,6 +170,11 @@ projects = p.get("projects", [])
 stack = p.get("stack", [])
 prompt = p.get("prompt", {})
 
+PATH = prompt.get("path", "")
+BRANCH = prompt.get("branch", "")
+DURATION = prompt.get("cmd_duration", "0s")
+TIME_DISPLAY = prompt.get("time", "00:00")
+
 rows = []
 y = 74
 
@@ -102,8 +184,8 @@ rows.append(text(LEFT, y, "dim", "-" * 78))
 
 WHOAMI_VALUE_X = LEFT + 96
 
-y += 36
-rows.append(cmd_prompt(LEFT, y, "whoami"))
+y += CMD_TO_NEXT_BAR_GAP
+y = prompt_and_command(rows, y, PATH, BRANCH, DURATION, TIME_DISPLAY, "whoami")
 for key, value in [
     ("Role", identity.get("role", "")),
     ("University", identity.get("university", "")),
@@ -113,8 +195,8 @@ for key, value in [
     y += 28 if key == "Role" else LINE_H
     rows.append(kv_row(LEFT, WHOAMI_VALUE_X, y, "mono", key, value))
 
-y += 40
-rows.append(cmd_prompt(LEFT, y, "research --current"))
+y += CMD_TO_NEXT_BAR_GAP
+y = prompt_and_command(rows, y, PATH, BRANCH, DURATION, TIME_DISPLAY, "research --current")
 for item in research.get("current", []):
     y += LINE_H
     status = item.get("status", "").upper()
@@ -123,23 +205,23 @@ for item in research.get("current", []):
 
 description = research.get("description", [])
 if description:
-    y += 40
-    rows.append(cmd_prompt(LEFT, y, "cat research.txt"))
+    y += CMD_TO_NEXT_BAR_GAP
+    y = prompt_and_command(rows, y, PATH, BRANCH, DURATION, TIME_DISPLAY, "cat research.txt")
     for line in description:
         y += LINE_H
         rows.append(text(LEFT, y, "mono", line))
 
 if stack:
-    y += 40
-    rows.append(cmd_prompt(LEFT, y, "stack --list"))
+    y += CMD_TO_NEXT_BAR_GAP
+    y = prompt_and_command(rows, y, PATH, BRANCH, DURATION, TIME_DISPLAY, "stack --list")
     y += 28
     rows.append(text(LEFT, y, "mono", " · ".join(stack)))
 
 ENV_VALUE_X = LEFT + 68
 
 if systems:
-    y += 40
-    rows.append(cmd_prompt(LEFT, y, "env --list"))
+    y += CMD_TO_NEXT_BAR_GAP
+    y = prompt_and_command(rows, y, PATH, BRANCH, DURATION, TIME_DISPLAY, "env --list")
     y += 28
     rows.append(kv_row(LEFT, ENV_VALUE_X, y, "mono", "OS", " · ".join(systems.get("os", []))))
     y += LINE_H
@@ -152,8 +234,8 @@ NAME_X = LEFT + 42
 STATUS_X = LEFT + 260
 
 if projects:
-    y += 40
-    rows.append(cmd_prompt(LEFT, y, "projects --active"))
+    y += CMD_TO_NEXT_BAR_GAP
+    y = prompt_and_command(rows, y, PATH, BRANCH, DURATION, TIME_DISPLAY, "projects --active")
     y += 28
     rows.append(
         f'<text x="{PID_X}" y="{y}" class="dim">'
@@ -174,92 +256,18 @@ if projects:
 
 body_bottom = y + 30
 
-# --- Starship 風 powerline プロンプト (下部バー) ---
-# 実際の starship.toml (modules/shell/starship/starship.toml) の format に合わせる:
-#   $directory -> [](fg:accent bg:dark) -> $git_branch$git_status -> [](fg:dark) -> \n$character
-#   right_format = "$cmd_duration$time"  (1行目の右端に表示される)
-# コンテナ内(nixcli_badge)/SSH接続時(ssh_host)のバッジは通常環境では表示されない
-# ため(実機スクリーンショットで確認済み)、このモックでも省略する。
-# git_branch の symbol は U+F418 (nf-oct-git_branch)、cmd_duration/time の区切り
-# アイコンは U+E0B3 (powerline的な小さな山形) を実設定のまま焼き込む。
-GIT_BRANCH_ICON = ""
-SEGMENT_ICON = ""
-cmd_duration = prompt.get("cmd_duration", "0s")
-time_display = prompt.get("time", "00:00")
-
-PROMPT_H = 24
-LINE_GAP = 14
-prompt_y_top = body_bottom + 10
-prompt_baseline = prompt_y_top + PROMPT_H / 2 + 4
-bar_bottom = prompt_y_top + PROMPT_H
-character_baseline = bar_bottom + LINE_GAP + 14
-
-dir_text = f' {prompt.get("path", "")} '
-git_text = f' {GIT_BRANCH_ICON} {prompt.get("branch", "")} '
-
-CHAR_W = 6.2
-PAD = 4
-ARROW_W = 8  # powerline矢印の突き出し幅
-
-def seg_width(s):
-    return round(len(s) * CHAR_W) + PAD * 2
-
-# セグメント定義: (表示文字, 背景色, 文字色) -- directory(accent) -> git_branch(dark)
-segments = [
-    (dir_text, ACCENT, ON_ACCENT),
-    (git_text, DARK, ACCENT),
-]
-
-seg_x = LEFT
-rect_svg = []
-arrow_svg = []
-seg_text_svg = []
-bounds = []
-for value, bg_color, fg_color in segments:
-    w = seg_width(value)
-    rect_svg.append(f'<rect x="{seg_x}" y="{prompt_y_top}" width="{w}" height="{PROMPT_H}" fill="{bg_color}"/>')
-    seg_text_svg.append(
-        f'<text x="{seg_x + w/2}" y="{prompt_baseline}" class="promptseg" '
-        f'text-anchor="middle" fill="{fg_color}" font-weight="bold">{esc(value)}</text>'
-    )
-    bounds.append(seg_x + w)
-    seg_x += w
-
-# powerline矢印: 各セグメント境界に、手前の色で右向き三角形を重ね描きする
-# (先に全セグメントのrectを描画してから矢印を上に重ねることで、次のセグメントに
-#  食い込む矢印が隠れずに見える)。最後の矢印はdark色のままプレーンな背景に抜ける。
-for boundary, (_, bg_color, _) in zip(bounds, segments):
-    th = PROMPT_H / 2
-    arrow_svg.append(
-        f'<polygon points="{boundary},{prompt_y_top} {boundary+ARROW_W},{prompt_y_top+th} '
-        f'{boundary},{bar_bottom}" fill="{bg_color}"/>'
-    )
-
-prompt_svg = rect_svg + arrow_svg + seg_text_svg
-
-# right_format = "$cmd_duration$time" : 背景なしの装飾テキストとして右端に配置
-duration_text = f'{SEGMENT_ICON} {cmd_duration}'
-time_text = f'{SEGMENT_ICON} {time_display}'
-right_edge = WIDTH - LEFT
-time_w = seg_width(time_text) + 8
-duration_w = seg_width(duration_text) + 8
-prompt_svg.append(
-    f'<text x="{right_edge}" y="{prompt_baseline}" class="promptright" text-anchor="end">{esc(time_text)}</text>'
-)
-prompt_svg.append(
-    f'<text x="{right_edge - time_w}" y="{prompt_baseline}" class="promptright" text-anchor="end">{esc(duration_text)}</text>'
-)
-
-# $character は format 上で改行(\n)を挟んだ次の行に単独で描かれる
-# (プロンプトバッジと同じ行には続かない)
-prompt_svg.append(
+# --- 末尾: 次の入力を待つプロンプト (バー + 単独の $character、コマンドなし) ---
+final_bar_svg, final_bar_bottom = prompt_bar(body_bottom, PATH, BRANCH, DURATION, TIME_DISPLAY)
+rows.extend(final_bar_svg)
+character_baseline = final_bar_bottom + BAR_TO_CMD_GAP
+rows.append(
     f'<text x="{LEFT}" y="{character_baseline}" class="promptchar" font-weight="bold">&#10095;</text>'
 )
-prompt_svg.append(
+rows.append(
     f'<rect x="{LEFT + 14}" y="{character_baseline - 11}" width="6" height="13" rx="1" class="cursor"/>'
 )
 
-height = character_baseline + 12
+height = character_baseline + 20
 
 # --- タブバー (信号ボタン行 + タブ行の2段構成) ---
 DOT_ROW_H = 30
@@ -284,8 +292,8 @@ svg = f"""<svg width="{WIDTH}" height="{height}" viewBox="0 0 {WIDTH} {height}" 
     .yellow {{ font-size: 14px; fill: {DRAGON_YELLOW}; }}
     .accent {{ font-size: 14px; fill: {ACCENT}; }}
     .tabtext {{ font-size: 12px; fill: {ON_ACCENT}; font-weight: 700; }}
-    .promptseg {{ font-size: 12px; }}
-    .promptright {{ font-size: 12px; font-weight: 700; fill: {MUTED}; }}
+    .barseg {{ font-size: {BAR_FONT}px; }}
+    .barright {{ font-size: {BAR_FONT}px; font-weight: 700; fill: {MUTED}; }}
     .cursor {{ fill: {CARET}; animation: blink 1s steps(2, start) infinite; }}
     @keyframes blink {{ 50% {{ opacity: 0; }} }}
   </style>
@@ -304,8 +312,6 @@ svg = f"""<svg width="{WIDTH}" height="{height}" viewBox="0 0 {WIDTH} {height}" 
   {text(tab_x + tab_w/2 + tab_skew/2, DOT_ROW_H + TAB_ROW_H*0.68, "tabtext", tab_label, anchor="middle")}
 
   {"".join(rows)}
-
-  {"".join(prompt_svg)}
 </svg>
 """
 
