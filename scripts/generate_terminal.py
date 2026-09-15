@@ -298,7 +298,7 @@ def flush_block():
         current = []
 
 
-y = 64
+y = 72
 
 current.append(text(LEFT, y, "title", f'{identity["username"]}@{identity["terminal_host"]}'))
 y += 26
