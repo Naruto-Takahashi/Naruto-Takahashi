@@ -404,8 +404,10 @@ for block, d in zip(blocks, block_delays):
 
 # --- タブバー (信号ボタン行 + タブ行の2段構成)。上下方向の厚みを薄くしている ---
 DOT_ROW_H = 20
+TAB_TOP_MARGIN = 4  # 信号ボタン行の下線とタブ上端が近すぎたため、少し余白を空ける
 TAB_ROW_H = 18
-HEADER_H = DOT_ROW_H + TAB_ROW_H
+TAB_TOP = DOT_ROW_H + TAB_TOP_MARGIN
+HEADER_H = TAB_TOP + TAB_ROW_H
 tab_skew = 6
 TAB_GAP = 3
 
@@ -425,18 +427,18 @@ tab_svg = []
 tab_x = 16
 active_w = round(len(active_tab_label) * 7.2) + 14
 tab_svg.append(
-    f'<polygon points="{tab_polygon(tab_x, active_w, DOT_ROW_H, HEADER_H, tab_skew)}" fill="{ACCENT}"/>'
+    f'<polygon points="{tab_polygon(tab_x, active_w, TAB_TOP, HEADER_H, tab_skew)}" fill="{ACCENT}"/>'
 )
-tab_svg.append(text(tab_x + active_w/2 + tab_skew/2, DOT_ROW_H + TAB_ROW_H*0.68, "tabtext", active_tab_label, anchor="middle"))
+tab_svg.append(text(tab_x + active_w/2 + tab_skew/2, TAB_TOP + TAB_ROW_H*0.68, "tabtext", active_tab_label, anchor="middle"))
 tab_x += active_w + tab_skew + TAB_GAP
 
 for label in inactive_tab_labels:
     w = round(len(label) * 6.6) + 12
     tab_svg.append(
-        f'<polygon points="{tab_polygon(tab_x, w, DOT_ROW_H, HEADER_H, tab_skew)}" '
+        f'<polygon points="{tab_polygon(tab_x, w, TAB_TOP, HEADER_H, tab_skew)}" '
         f'fill="{BG_ALT}" stroke="{BORDER}" stroke-width="1" stroke-linejoin="round"/>'
     )
-    tab_svg.append(text(tab_x + w/2 + tab_skew/2, DOT_ROW_H + TAB_ROW_H*0.68, "tabtext-inactive", label, anchor="middle"))
+    tab_svg.append(text(tab_x + w/2 + tab_skew/2, TAB_TOP + TAB_ROW_H*0.68, "tabtext-inactive", label, anchor="middle"))
     tab_x += w + tab_skew + TAB_GAP
 
 svg = f"""<svg width="{WIDTH}" height="{height}" viewBox="0 0 {WIDTH} {height}" fill="none" xmlns="http://www.w3.org/2000/svg">
