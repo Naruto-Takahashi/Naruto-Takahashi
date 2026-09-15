@@ -74,7 +74,7 @@ BAR_PAD = 3
 ARROW_W = 6
 BAR_TO_CMD_GAP = 22
 CMD_TO_NEXT_BAR_GAP = 30
-GIT_ICON_W = 26  # branchアイコン用に確保する幅 (powerline矢印の食い込み分+左余白+アイコン本体+余白)
+GIT_ICON_W = 29  # branchアイコン用に確保する幅 (powerline矢印の食い込み分+左余白+アイコン本体+余白)
 
 # タイピング再生のタイムライン制御:
 #   バー出現 -> (TYPE_DELAY_OFFSET後) タイプ開始 -> 打ち終わり
@@ -202,7 +202,7 @@ def prompt_bar(y_top, path, branch):
     # powerline矢印(ARROW_W幅、accent色)がgitセグメントの左端に食い込んでいるため、
     # アイコンをaccent色そのままで置くとそこに埋もれて見えなくなる。矢印の外側
     # (dark背景の上)まで押し出して配置する。
-    icon_cx = git_seg_x + ARROW_W + BAR_PAD + 6
+    icon_cx = git_seg_x + ARROW_W + BAR_PAD + 9
     icon_svg = git_branch_icon_svg(icon_cx, icon_cy, ACCENT)
     branch_text_svg = (
         f'<text x="{git_seg_x + GIT_ICON_W}" y="{baseline}" class="barseg" '
