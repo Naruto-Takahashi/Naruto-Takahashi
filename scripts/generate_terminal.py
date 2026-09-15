@@ -66,7 +66,7 @@ BAR_PAD = 3
 ARROW_W = 6
 BAR_TO_CMD_GAP = 22
 CMD_TO_NEXT_BAR_GAP = 30
-GIT_ICON_W = 18  # branchアイコン用に確保する幅 (powerline矢印の食い込み分+アイコン本体+余白)
+GIT_ICON_W = 26  # branchアイコン用に確保する幅 (powerline矢印の食い込み分+左余白+アイコン本体+余白)
 
 # タイピング再生のタイムライン制御:
 #   バー出現 -> (TYPE_DELAY_OFFSET後) タイプ開始 -> 打ち終わり
@@ -172,7 +172,7 @@ def prompt_bar(y_top, path, branch):
     # powerline矢印(ARROW_W幅、accent色)がgitセグメントの左端に食い込んでいるため、
     # アイコンをaccent色そのままで置くとそこに埋もれて見えなくなる。矢印の外側
     # (dark背景の上)まで押し出して配置する。
-    icon_cx = git_seg_x + ARROW_W + BAR_PAD + 3
+    icon_cx = git_seg_x + ARROW_W + BAR_PAD + 6
     icon_svg = git_branch_icon_svg(icon_cx, icon_cy, ACCENT)
     branch_text_svg = (
         f'<text x="{git_seg_x + GIT_ICON_W}" y="{baseline}" class="barseg" '
@@ -422,31 +422,32 @@ svg = f"""<svg width="{WIDTH}" height="{height}" viewBox="0 0 {WIDTH} {height}" 
     @keyframes blink {{ 50% {{ opacity: 0; }} }}
 
     /* タイピング再生 (1回完結): ブロックが上からフェード+スライドインで
-       順番に出現する。librsvg等の静的レンダラやreduced-motion環境は
-       @media を解釈できず/評価がfalseになり、下の「常に表示」がそのまま
-       効くようフォールバックにしている (これが無いと、アニメーション未再生の
-       環境で opacity:0 のまま止まって真っ黒に見えてしまう)。 */
-    .reveal {{ opacity: 1; }}
-    .typeline {{ display: inline-block; clip-path: inset(0 0 0 0); }}
-    @media (prefers-reduced-motion: no-preference) {{
-      .reveal {{
-        opacity: 0;
-        transform: translateY(5px);
-        animation: revealIn 0.5s ease-out both;
-      }}
-      /* コマンド文字列だけ、バーの出現から少し遅れて左→右にタイプされる演出。
-         等速だと不自然なので、バーストと一瞬の"打鍵の迷い"を混ぜた不均一な
-         キーフレームにし、animation-durationは文字数で個別に伸縮させている
-         (prompt_and_command/type_duration参照)。2種類のカーブ(typeline-b)を
-         コマンドごとに交互適用し、毎回同じリズムに見えないようにした。 */
-      .typeline {{
-        clip-path: inset(0 100% 0 0);
-        animation-name: typeReveal;
-        animation-timing-function: linear;
-        animation-fill-mode: both;
-      }}
-      .typeline-b {{ animation-name: typeReveal2; }}
+       順番に出現する。prefers-reduced-motionでは分岐させない
+       (Vivaldi等、OS側の「モーションを減らす」設定が意図せずオンになっていると
+       それだけでアニメーションが再生されなくなってしまうため、常に再生する)。
+       その代わり、静的なopacity/clip-pathの宣言としては「常にフル表示」
+       (opacity:1 / clip-path:フル開放) だけを書き、非表示状態は
+       @keyframesの0%側にしか存在しないようにしている。こうすることで
+       librsvg等アニメーションを実行できないレンダラは単に静的な
+       opacity:1をそのまま使い、対応ブラウザだけがアニメーション通りに
+       0%から再生する(=静的レンダラでも真っ黒にならない)。 */
+    .reveal {{
+      opacity: 1;
+      animation: revealIn 0.5s ease-out both;
     }}
+    /* コマンド文字列だけ、バーの出現から少し遅れて左→右にタイプされる演出。
+       等速だと不自然なので、バーストと一瞬の"打鍵の迷い"を混ぜた不均一な
+       キーフレームにし、animation-durationは文字数で個別に伸縮させている
+       (prompt_and_command/type_duration参照)。2種類のカーブ(typeline-b)を
+       コマンドごとに交互適用し、毎回同じリズムに見えないようにした。 */
+    .typeline {{
+      display: inline-block;
+      clip-path: inset(0 0 0 0);
+      animation-name: typeReveal;
+      animation-timing-function: linear;
+      animation-fill-mode: both;
+    }}
+    .typeline-b {{ animation-name: typeReveal2; }}
     @keyframes revealIn {{
       from {{ opacity: 0; transform: translateY(5px); }}
       to   {{ opacity: 1; transform: translateY(0); }}
