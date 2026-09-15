@@ -27,6 +27,16 @@
       "pid": "001",
       "name": "human-computable-passwords",
       "status": "running"
+    },
+    {
+      "pid": "002",
+      "name": "lrPymRPC_broker_prj",
+      "status": "running"
+    },
+    {
+      "pid": "003",
+      "name": "project-apor.ia",
+      "status": "running"
     }
   ],
   "stack": [
