@@ -323,9 +323,11 @@ if stack:
 
 OS_X = LEFT
 WM_X = LEFT + 190
+EDITOR_X = LEFT + 330
 
 if systems:
     hosts = systems.get("hosts", [])
+    editor = systems.get("editor", "")
     y += CMD_TO_NEXT_BAR_GAP
     y = run_command(y, "env --list")
     pending_delay = output_delay
@@ -334,22 +336,21 @@ if systems:
         f'<text x="{OS_X}" y="{y}" class="dim">'
         f'<tspan x="{OS_X}">OS</tspan>'
         f'<tspan x="{WM_X}">WM</tspan>'
+        f'<tspan x="{EDITOR_X}">Editor</tspan>'
         f'</text>'
     )
+    # Editorはホストによらず共通の1つの値だが、列として並べると3行とも
+    # 同じ値の繰り返しになる。それでも「OS×WMの組ごとに使うエディタ」という
+    # 表の一部として見せたいとのことなので、あえて各行に重複表示する。
     for host in hosts:
         y += LINE_H
         current.append(
             f'<text x="{OS_X}" y="{y}" class="mono">'
             f'<tspan x="{OS_X}">{esc(host.get("os", ""))}</tspan>'
             f'<tspan x="{WM_X}">{esc(host.get("wm", ""))}</tspan>'
+            f'<tspan x="{EDITOR_X}">{esc(editor)}</tspan>'
             f'</text>'
         )
-    # EditorはOSの一種ではないため、OS/WM表の列(OS_X/WM_X)は使わず、
-    # 別のkey-value行として続ける。ただし前のkv_row実装のように大きな
-    # 余白(28px)を空けると孤立して見えたため、表の最終行からの間隔は
-    # LINE_H程度に詰めて「表の直後に続く別項目」として自然に見せている。
-    y += LINE_H
-    current.append(kv_row(LEFT, LEFT + 68, y, "mono", "Editor", systems.get("editor", "")))
     flush_block()
 
 PID_X = LEFT
