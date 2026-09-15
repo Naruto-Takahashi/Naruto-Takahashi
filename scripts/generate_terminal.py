@@ -111,7 +111,7 @@ def kv_row(x, value_x, y, cls, key, value):
     # <tspan> に分けることで、フォントに関わらず値の開始位置を揃える。
     return (
         f'<text x="{x}" y="{y}" class="{cls}">'
-        f'<tspan x="{x}">{esc(key)}</tspan>'
+        f'<tspan x="{x}" class="syn-storage">{esc(key)}</tspan>'
         f'<tspan x="{value_x}">{esc(value)}</tspan>'
         f'</text>'
     )
@@ -331,7 +331,15 @@ if stack:
     y = run_command(y, "stack --list")
     pending_delay = output_delay
     y += 28
-    current.append(text(LEFT, y, "mono", " · ".join(stack.get("languages", []))))
+    # 言語名を Function/Storage/Class/Const の4色でローテーションして、
+    # シンタックスハイライトの雰囲気を控えめに出す (塗り絵にならない程度)。
+    lang_colors = ["syn-func", "syn-storage", "syn-class", "syn-const"]
+    lang_spans = []
+    for i, lang in enumerate(stack.get("languages", [])):
+        if i:
+            lang_spans.append('<tspan class="dim"> · </tspan>')
+        lang_spans.append(f'<tspan class="{lang_colors[i % len(lang_colors)]}">{esc(lang)}</tspan>')
+    current.append(f'<text x="{LEFT}" y="{y}" class="mono">{"".join(lang_spans)}</text>')
     flush_block()
 
 OS_X = LEFT
@@ -387,8 +395,8 @@ if projects:
         status = project.get("status", "")
         current.append(
             f'<text x="{PID_X}" y="{y}" class="mono">'
-            f'<tspan x="{PID_X}">{esc(project.get("pid", ""))}</tspan>'
-            f'<tspan x="{NAME_X}">{esc(project.get("name", ""))}</tspan>'
+            f'<tspan x="{PID_X}" class="dim">{esc(project.get("pid", ""))}</tspan>'
+            f'<tspan x="{NAME_X}" class="syn-class">{esc(project.get("name", ""))}</tspan>'
             f'<tspan x="{STATUS_X}" class="{status_class(status)}">{esc(status)}</tspan>'
             f'</text>'
         )
