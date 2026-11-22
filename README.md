@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./assets/terminal.svg?v=2" width="100%" alt="nalt terminal profile" />
+  <img src="./assets/profile.svg" width="100%" alt="nalt terminal profile" />
 </p>
 
 ### Featured Repositories

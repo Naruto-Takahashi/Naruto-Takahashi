@@ -19,7 +19,7 @@ import json
 
 ROOT = Path(__file__).resolve().parent.parent
 PROFILE_PATH = ROOT / "profile.json"
-OUTPUT_PATH = ROOT / "assets" / "terminal.svg"
+OUTPUT_PATH = ROOT / "assets" / "profile.svg"
 
 WIDTH = 820
 LEFT = 32
