@@ -3,12 +3,12 @@
     "username": "nalt",
     "role": "AI & Security Researcher / Systems Engineer",
     "affiliation": "Kyushu Univ. — Sakurai Laboratory",
-    "interests": "LLM Security · AI Agents · Declarative Infra"
+    "interests": "AI / ML Security · AI Agents · Declarative Infra"
   },
   "focus": [
     {
       "tag": "RESEARCH",
-      "label": "Human-Computable Passwords × LLM Evaluation"
+      "label": "Human-Computable Passwords × Transformer Evaluation"
     },
     {
       "tag": "SOLVE",

@@ -1,12 +1,12 @@
 <p align="center">
-  <img src="./assets/terminal.svg" width="100%" alt="nalt terminal profile" />
+  <img src="./assets/terminal.svg?v=2" width="100%" alt="nalt terminal profile" />
 </p>
 
 ### Featured Repositories
 
 | Repository | Focus | Overview |
 | :--- | :--- | :--- |
-| [human-computable-passwords](https://github.com/Naruto-Takahashi/human-computable-passwords) | Research / LLM | Benchmarking LLM rule execution and rule induction on human-computable authentication schemes |
+| [human-computable-passwords](https://github.com/Naruto-Takahashi/human-computable-passwords) | Research / ML | Benchmarking Transformer rule execution and rule induction on human-computable authentication schemes |
 | [nix-config](https://github.com/Naruto-Takahashi/nix-config) | Nix / Infra | Declarative multi-OS environment management (macOS, NixOS, WSL2) via Nix Flakes & Home Manager |
 | [secretary](https://github.com/Naruto-Takahashi/secretary) | AI Agent | Automated email triage, AI importance scoring, and Discord notification assistant |
 | [lrPymRPC_prj](https://github.com/Naruto-Takahashi/lrPymRPC_prj) | Systems / RPC | Python gRPC client & distributed RPC tooling |
