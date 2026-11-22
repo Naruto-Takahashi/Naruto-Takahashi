@@ -332,7 +332,7 @@ flush_block()
 focus_items = p.get("focus", [])
 if focus_items:
     TAG_X, LABEL_X = column_x(LEFT, [f"[{it.get('tag', '')}]" for it in focus_items])
-    tag_colors = {"RESEARCH": "green", "SOLVE": "yellow", "DEV": "accent"}
+    tag_colors = {"RESEARCH": "green", "PRODUCT": "yellow", "SYSTEMS": "accent"}
     y += CMD_TO_NEXT_BAR_GAP
     y = run_command(y, "focus --active")
     pending_delay = output_delay

@@ -1,6 +1,12 @@
 <p align="center">
-  <img src="./assets/profile.svg" width="100%" alt="nalt terminal profile" />
+  <img src="./assets/profile.svg?v=2" width="100%" alt="nalt terminal profile" />
 </p>
+
+### About
+
+- **Research**: Sakurai Lab, Kyushu University — evaluating Transformer limits on human-computable authentication schemes.
+- **Product**: Selected for Fukuoka Mitou Solve (`APOR.IA`) — building AI-assisted document verification workflows.
+- **Engineering**: Reproducible multi-OS environments with Nix Flakes, distributed Python RPC systems, and autonomous AI agents.
 
 ### Featured Repositories
 

@@ -11,12 +11,12 @@
       "label": "Human-Computable Passwords × Transformer Evaluation"
     },
     {
-      "tag": "SOLVE",
-      "label": "APOR.IA (Fukuoka Mitou Solve)"
+      "tag": "PRODUCT",
+      "label": "APOR.IA — AI Document Verification (Fukuoka Mitou)"
     },
     {
-      "tag": "DEV",
-      "label": "Python RPC Broker · AI Agent Automation"
+      "tag": "SYSTEMS",
+      "label": "Nix Multi-OS Infra · Python RPC Broker · AI Agents"
     }
   ],
   "stack": {
