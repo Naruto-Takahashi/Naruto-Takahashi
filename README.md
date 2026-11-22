@@ -21,6 +21,7 @@
 ### Latest Zenn Articles
 
 <!-- ZENN-POSTS:START -->
+- `2026-11-22` [勾配なしでLLMが自分の重みを直し+6.6pt改善、その仕組みと潜む運用リスク](https://zenn.dev/nalt/articles/llm-self-rewriting-weights-arxiv-2611)
 - `2026-01-27` [LazyGit × Geminiでターミナル環境でもコミットメッセージを自動生成！](https://zenn.dev/nalt/articles/lazygit-gemini)
 - `2026-01-19` [WSL2のGemini CLIにクリップボードの画像を渡す方法](https://zenn.dev/nalt/articles/wsl-gemini-cli-clipboard)
 - `2026-01-17` [Neovimデビューしたい人必見！｜Neovim公式チュートリアルを日本語でやる方法](https://zenn.dev/nalt/articles/neovim-official-tutorial-japanese)
