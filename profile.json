@@ -1,49 +1,26 @@
 {
   "identity": {
     "username": "nalt",
-    "terminal_host": "nixos",
-    "role": "LLM Security Researcher (B4, M1-bound)",
-    "university": "Kyushu University, Faculty of Engineering",
-    "lab": "Sakurai Laboratory",
-    "location": "Fukuoka, Japan"
+    "role": "AI & Security Researcher / Systems Engineer",
+    "affiliation": "Kyushu Univ. — Sakurai Laboratory",
+    "interests": "LLM Security · AI Agents · Declarative Infra"
   },
-  "systems": {
-    "hosts": [
-      { "os": "WSL2 (Windows 11)", "wm": "komorebi + YASB" },
-      { "os": "macOS (Apple Silicon)", "wm": "AeroSpace" },
-      { "os": "NixOS", "wm": "Hyprland + Waybar" }
-    ],
-    "editor": "Neovim + WezTerm"
-  },
-  "research": {
-    "current": [
-      { "status": "RUNNING", "label": "Human-Computable Passwords" }
-    ],
-    "description": [
-      "Benchmarking authentication schemes a human can compute by hand,",
-      "evaluating LLM limits in both rule execution (deduction) and",
-      "rule inference (induction)."
-    ]
-  },
-  "projects": [
+  "focus": [
     {
-      "pid": "001",
-      "name": "human-computable-passwords",
-      "status": "running"
+      "tag": "RESEARCH",
+      "label": "Human-Computable Passwords × LLM Evaluation"
     },
     {
-      "pid": "002",
-      "name": "lrPymRPC_broker_prj",
-      "status": "running"
+      "tag": "SOLVE",
+      "label": "APOR.IA (Fukuoka Mitou Solve)"
     },
     {
-      "pid": "003",
-      "name": "project-apor.ia",
-      "status": "running"
+      "tag": "DEV",
+      "label": "Python RPC Broker · AI Agent Automation"
     }
   ],
   "stack": {
-    "languages": ["Python", "C", "C++", "Assembly"]
+    "languages": ["Python", "C / C++", "Nix", "TypeScript", "Neovim"]
   },
   "prompt": {
     "path": "~/Naruto-Takahashi",

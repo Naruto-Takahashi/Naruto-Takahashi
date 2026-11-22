@@ -298,19 +298,12 @@ def flush_block():
         current = []
 
 
-y = 72
-
-current.append(text(LEFT, y, "title", f'{identity["username"]}@{identity["terminal_host"]}'))
-y += 26
-current.append(text(LEFT, y, "dim", "-" * 78))
-flush_block()
+HEADER_H = 26
+y = HEADER_H + 22
 
 # タイムライン: バー出現 -> タイプ -> (Enter想定のポーズ) -> 出力フェードイン
-# -> 次のバー、の順で経過時間を積み上げていく。バー+コマンド行はその場で
-# 独立したブロックとして即座にflushし、出力側は呼び出し元がoutput_delayを
-# 使って別ブロックとして後からflushすることで、「打ち終わる前に結果が
-# 表示される」不自然さを避けている。
-total_delay = 0.4
+# -> 次のバー、の順で経過時間を積み上げていく。
+total_delay = 0.25
 variant = 0
 output_delay = 0.0
 
@@ -329,20 +322,12 @@ def run_command(y, cmd):
     return cmd_y
 
 
-# ブロックの並び順: whoami(自己紹介) -> stack/env(スキル・環境) ->
-# projects(取り組んでいること) -> research(いま推している研究テーマの詳細)。
-# 「何者か」を固めてから「何を使っているか」「何をしているか」に進み、
-# 最後に研究テーマの詳細で締める流れにしている。
-# 罫線の直後だけは他のコマンド間より詰めてよい(セクション区切りではなく
-# ヘッダーの一部として見せたいため)。
-y += 18
 y = run_command(y, "whoami")
 pending_delay = output_delay
 whoami_rows = [
     ("Role", identity.get("role", "")),
-    ("University", identity.get("university", "")),
-    ("Lab", identity.get("lab", "")),
-    ("Location", identity.get("location", "")),
+    ("Affiliation", identity.get("affiliation", "")),
+    ("Interests", identity.get("interests", "")),
 ]
 KEY_X, VALUE_X = column_x(LEFT, [key for key, _ in whoami_rows])
 for key, value in whoami_rows:
@@ -350,13 +335,31 @@ for key, value in whoami_rows:
     current.append(kv_row(KEY_X, VALUE_X, y, "mono", key, value))
 flush_block()
 
+focus_items = p.get("focus", [])
+if focus_items:
+    TAG_X, LABEL_X = column_x(LEFT, [f"[{it.get('tag', '')}]" for it in focus_items])
+    tag_colors = {"RESEARCH": "green", "SOLVE": "yellow", "DEV": "accent"}
+    y += CMD_TO_NEXT_BAR_GAP
+    y = run_command(y, "focus --active")
+    pending_delay = output_delay
+    for i, item in enumerate(focus_items):
+        y += 28 if i == 0 else LINE_H
+        tag = item.get("tag", "").upper()
+        label = item.get("label", "")
+        cls = tag_colors.get(tag, "accent")
+        current.append(
+            f'<text x="{TAG_X}" y="{y}" class="mono">'
+            f'<tspan x="{TAG_X}" class="{cls}">[{esc(tag)}]</tspan>'
+            f'<tspan x="{LABEL_X}">{esc(label)}</tspan>'
+            f'</text>'
+        )
+    flush_block()
+
 if stack:
     y += CMD_TO_NEXT_BAR_GAP
-    y = run_command(y, "stack --list")
+    y = run_command(y, "stack --core")
     pending_delay = output_delay
     y += 28
-    # 言語名を Function/Storage/Class/Const の4色でローテーションして、
-    # シンタックスハイライトの雰囲気を控えめに出す (塗り絵にならない程度)。
     lang_colors = ["syn-func", "syn-storage", "syn-class", "syn-const"]
     lang_spans = []
     for i, lang in enumerate(stack.get("languages", [])):
@@ -366,89 +369,7 @@ if stack:
     current.append(f'<text x="{LEFT}" y="{y}" class="mono">{"".join(lang_spans)}</text>')
     flush_block()
 
-if systems:
-    hosts = systems.get("hosts", [])
-    editor = systems.get("editor", "")
-    OS_X, WM_X, EDITOR_X = column_x(
-        LEFT,
-        [h.get("os", "") for h in hosts] + ["OS"],
-        [h.get("wm", "") for h in hosts] + ["WM"],
-    )
-    y += CMD_TO_NEXT_BAR_GAP
-    y = run_command(y, "env --list")
-    pending_delay = output_delay
-    y += 28
-    current.append(
-        f'<text x="{OS_X}" y="{y}" class="dim">'
-        f'<tspan x="{OS_X}">OS</tspan>'
-        f'<tspan x="{WM_X}">WM</tspan>'
-        f'<tspan x="{EDITOR_X}">Editor</tspan>'
-        f'</text>'
-    )
-    # Editorはホストによらず共通の1つの値だが、列として並べると3行とも
-    # 同じ値の繰り返しになる。それでも「OS×WMの組ごとに使うエディタ」という
-    # 表の一部として見せたいとのことなので、あえて各行に重複表示する。
-    for host in hosts:
-        y += LINE_H
-        current.append(
-            f'<text x="{OS_X}" y="{y}" class="mono">'
-            f'<tspan x="{OS_X}">{esc(host.get("os", ""))}</tspan>'
-            f'<tspan x="{WM_X}">{esc(host.get("wm", ""))}</tspan>'
-            f'<tspan x="{EDITOR_X}">{esc(editor)}</tspan>'
-            f'</text>'
-        )
-    flush_block()
-
-if projects:
-    PID_X, NAME_X, STATUS_X = column_x(
-        LEFT,
-        [pr.get("pid", "") for pr in projects] + ["PID"],
-        [pr.get("name", "") for pr in projects] + ["PROJECT"],
-    )
-    y += CMD_TO_NEXT_BAR_GAP
-    y = run_command(y, "projects --active")
-    pending_delay = output_delay
-    y += 28
-    current.append(
-        f'<text x="{PID_X}" y="{y}" class="dim">'
-        f'<tspan x="{PID_X}">PID</tspan>'
-        f'<tspan x="{NAME_X}">PROJECT</tspan>'
-        f'<tspan x="{STATUS_X}">STATUS</tspan>'
-        f'</text>'
-    )
-    for project in projects:
-        y += LINE_H
-        status = project.get("status", "")
-        current.append(
-            f'<text x="{PID_X}" y="{y}" class="mono">'
-            f'<tspan x="{PID_X}" class="dim">{esc(project.get("pid", ""))}</tspan>'
-            f'<tspan x="{NAME_X}" class="syn-class">{esc(project.get("name", ""))}</tspan>'
-            f'<tspan x="{STATUS_X}" class="{status_class(status)}">{esc(status)}</tspan>'
-            f'</text>'
-        )
-    flush_block()
-
-y += CMD_TO_NEXT_BAR_GAP
-y = run_command(y, "research --current")
-pending_delay = output_delay
-for item in research.get("current", []):
-    y += LINE_H
-    status = item.get("status", "").upper()
-    label = item.get("label", "")
-    current.append(text(LEFT, y, status_class(status), f"[{status}] {label}"))
-flush_block()
-
-description = research.get("description", [])
-if description:
-    y += CMD_TO_NEXT_BAR_GAP
-    y = run_command(y, "cat research.txt")
-    pending_delay = output_delay
-    for line in description:
-        y += LINE_H
-        current.append(text(LEFT, y, "mono", line))
-    flush_block()
-
-body_bottom = y + 30
+body_bottom = y + 26
 
 # --- 末尾: 次の入力を待つプロンプト (バー + 単独の $character、コマンドなし) ---
 pending_delay = total_delay
@@ -469,45 +390,6 @@ height = character_baseline + 20
 reveal_svg = []
 for block, d in zip(blocks, block_delays):
     reveal_svg.append(f'<g class="reveal" style="animation-delay:{d:.2f}s">{"".join(block)}</g>')
-
-# --- タブバー (信号ボタン行 + タブ行の2段構成)。上下方向の厚みを薄くしている ---
-DOT_ROW_H = 20
-TAB_TOP_MARGIN = 4  # 信号ボタン行の下線とタブ上端が近すぎたため、少し余白を空ける
-TAB_ROW_H = 18
-TAB_TOP = DOT_ROW_H + TAB_TOP_MARGIN
-HEADER_H = TAB_TOP + TAB_ROW_H
-tab_skew = 6
-TAB_GAP = 3
-
-# アクティブタブは「今まさにこのprofile.jsonを覗いている」というメタな
-# ネタとして、シェル名ではなくデータソースのファイル名を表示する。
-# 隣には実際の開発環境(Neovim + WezTerm)を匂わせる非アクティブなタブを
-# 並べ、普段づかいの多タブ構成っぽい雰囲気を出している。
-active_tab_label = "profile"
-inactive_tab_labels = ["nvim", "lazygit", "yazi"]
-
-
-def tab_polygon(x, w, y_top, y_bottom, skew):
-    return f'{x},{y_top} {x+skew},{y_bottom} {x+w+skew},{y_bottom} {x+w},{y_top}'
-
-
-tab_svg = []
-tab_x = 16
-active_w = round(len(active_tab_label) * 7.2) + 14
-tab_svg.append(
-    f'<polygon points="{tab_polygon(tab_x, active_w, TAB_TOP, HEADER_H, tab_skew)}" fill="{ACCENT}"/>'
-)
-tab_svg.append(text(tab_x + active_w/2 + tab_skew/2, TAB_TOP + TAB_ROW_H*0.68, "tabtext", active_tab_label, anchor="middle"))
-tab_x += active_w + tab_skew + TAB_GAP
-
-for label in inactive_tab_labels:
-    w = round(len(label) * 6.6) + 12
-    tab_svg.append(
-        f'<polygon points="{tab_polygon(tab_x, w, TAB_TOP, HEADER_H, tab_skew)}" '
-        f'fill="{BG_ALT}" stroke="{BORDER}" stroke-width="1" stroke-linejoin="round"/>'
-    )
-    tab_svg.append(text(tab_x + w/2 + tab_skew/2, TAB_TOP + TAB_ROW_H*0.68, "tabtext-inactive", label, anchor="middle"))
-    tab_x += w + tab_skew + TAB_GAP
 
 svg = f"""<svg width="{WIDTH}" height="{height}" viewBox="0 0 {WIDTH} {height}" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
@@ -609,13 +491,11 @@ svg = f"""<svg width="{WIDTH}" height="{height}" viewBox="0 0 {WIDTH} {height}" 
 
   <path d="M 0.75 12.75 Q 0.75 0.75 12.75 0.75 L {WIDTH-12.75} 0.75 Q {WIDTH-0.75} 0.75 {WIDTH-0.75} 12.75
            L {WIDTH-0.75} {HEADER_H} L 0.75 {HEADER_H} Z" fill="{BG_ALT}"/>
-  <line x1="0.75" y1="{DOT_ROW_H}" x2="{WIDTH-0.75}" y2="{DOT_ROW_H}" stroke="{BORDER}" stroke-width="1"/>
+  <line x1="0.75" y1="{HEADER_H}" x2="{WIDTH-0.75}" y2="{HEADER_H}" stroke="{BORDER}" stroke-width="1"/>
 
-  <circle cx="22" cy="{DOT_ROW_H/2}" r="4.5" fill="{DRAGON_RED}"/>
-  <circle cx="39" cy="{DOT_ROW_H/2}" r="4.5" fill="{DRAGON_YELLOW}"/>
-  <circle cx="56" cy="{DOT_ROW_H/2}" r="4.5" fill="{DRAGON_GREEN}"/>
-
-  {"".join(tab_svg)}
+  <circle cx="22" cy="{HEADER_H/2}" r="4.5" fill="{DRAGON_RED}"/>
+  <circle cx="39" cy="{HEADER_H/2}" r="4.5" fill="{DRAGON_YELLOW}"/>
+  <circle cx="56" cy="{HEADER_H/2}" r="4.5" fill="{DRAGON_GREEN}"/>
 
   {"".join(reveal_svg)}
 
