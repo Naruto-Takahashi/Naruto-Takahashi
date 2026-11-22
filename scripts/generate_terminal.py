@@ -21,9 +21,9 @@ ROOT = Path(__file__).resolve().parent.parent
 PROFILE_PATH = ROOT / "profile.json"
 OUTPUT_PATH = ROOT / "assets" / "terminal.svg"
 
-WIDTH = 900
-LEFT = 34
-LINE_H = 24
+WIDTH = 820
+LEFT = 32
+LINE_H = 26
 
 FONT = ('"HackGen Console NF", "SFMono-Regular", "Cascadia Code", '
         '"Roboto Mono", Menlo, Consolas, monospace')
@@ -67,30 +67,24 @@ DARK = "#272a2f"
 # 小さな branch アイコンを直接描く方式にしている。
 
 # バー自体は実機のように細く (フォントサイズ・パディングを本文より一段階小さく)
-BAR_H = 15
-BAR_FONT = 10
-BAR_CHAR_W = 5.1
-BAR_PAD = 3
+BAR_H = 18
+BAR_FONT = 11
+BAR_CHAR_W = 5.6
+BAR_PAD = 4
 ARROW_W = 6
-BAR_TO_CMD_GAP = 22
+BAR_TO_CMD_GAP = 24
 CMD_TO_NEXT_BAR_GAP = 30
 GIT_ICON_W = 29  # branchアイコン用に確保する幅 (powerline矢印の食い込み分+左余白+アイコン本体+余白)
 
-# タイピング再生のタイムライン制御:
-#   バー出現 -> (TYPE_DELAY_OFFSET後) タイプ開始 -> 打ち終わり
-#   -> (ENTER_PAUSE後、Enterを押したイメージ) 出力がフェードイン
-#   -> (OUTPUT_REVEAL_DUR+POST_GAP後) 次のコマンドのバーが出現
-# の順を守ることで、「打ち終わる前に結果が出る」不自然さを無くしている。
-TYPE_DELAY_OFFSET = 0.12
-ENTER_PAUSE = 0.15
-OUTPUT_REVEAL_DUR = 0.5
-POST_GAP = 0.3
+# タイピング再生のタイムライン制御 (テンポ良くシャープに表示)
+TYPE_DELAY_OFFSET = 0.06
+ENTER_PAUSE = 0.08
+OUTPUT_REVEAL_DUR = 0.25
+POST_GAP = 0.14
 
 
 def type_duration(cmd):
-    # コマンド文字列が長いほど打つのに時間がかかるようにし、全コマンドが
-    # 同じ速度で一律に打たれる不自然さ(等速タイピング)を避ける。
-    return round(0.5 + len(cmd) * 0.045, 2)
+    return round(0.24 + len(cmd) * 0.022, 2)
 
 
 def esc(s):
@@ -121,7 +115,7 @@ def kv_row(x, value_x, y, cls, key, value):
 # monospaceフォントの字幅がPCより広くなる。列を固定pxで並べる箇所はどこでも
 # 同じ問題(長い項目が次列に食い込んで見える)が起き得るため、実際の内容の
 # 最大文字数から必要幅を逆算する column_x() に一本化する。
-SAFE_CHAR_W = 9.5  # フォールバックフォントでも重ならない安全側の1文字あたりの幅(px)
+SAFE_CHAR_W = 10.8  # 16pxフォントでフォールバック時も重ならない安全側の1文字幅(px)
 COL_GAP = 20        # 列間の最低余白(px)
 
 
@@ -393,56 +387,36 @@ for block, d in zip(blocks, block_delays):
 
 svg = f"""<svg width="{WIDTH}" height="{height}" viewBox="0 0 {WIDTH} {height}" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <pattern id="scanlines" width="100%" height="4" patternUnits="userSpaceOnUse">
-      <rect width="100%" height="2" fill="#000000" opacity="0.35"/>
-    </pattern>
     <radialGradient id="vignette" cx="50%" cy="42%" r="75%">
-      <stop offset="60%" stop-color="#000000" stop-opacity="0"/>
-      <stop offset="100%" stop-color="#000000" stop-opacity="0.35"/>
+      <stop offset="65%" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.22"/>
     </radialGradient>
   </defs>
   <style>
     text {{ font-family: {FONT}; }}
     .bg {{ fill: {BG}; }}
     .border {{ stroke: {BORDER}; stroke-width: 1.5; }}
-    .mono {{ font-size: 14px; fill: {FG}; }}
+    .mono {{ font-size: 16px; fill: {FG}; }}
     .title {{ font-size: 16px; font-weight: 700; fill: {TERTIARY}; }}
-    .cmdline {{ font-size: 14px; fill: {FG}; }}
-    .promptchar {{ fill: {SECONDARY}; font-size: 14px; }}
-    .dim {{ font-size: 14px; fill: {DIM}; }}
-    .green {{ font-size: 14px; fill: {DRAGON_GREEN}; }}
-    .yellow {{ font-size: 14px; fill: {DRAGON_YELLOW}; }}
-    .accent {{ font-size: 14px; fill: {ACCENT}; }}
+    .cmdline {{ font-size: 16px; fill: {FG}; }}
+    .promptchar {{ fill: {SECONDARY}; font-size: 16px; }}
+    .dim {{ font-size: 16px; fill: {DIM}; }}
+    .green {{ font-size: 16px; fill: {DRAGON_GREEN}; }}
+    .yellow {{ font-size: 16px; fill: {DRAGON_YELLOW}; }}
+    .accent {{ font-size: 16px; fill: {ACCENT}; }}
     .syn-func {{ fill: {DRAGON_FUNC}; }}
     .syn-storage {{ fill: {DRAGON_STORAGE}; }}
     .syn-class {{ fill: {DRAGON_CLASS}; }}
     .syn-string {{ fill: {DRAGON_STRING}; }}
     .syn-const {{ fill: {DRAGON_CONST}; }}
-    .tabtext {{ font-size: 12px; fill: {ON_ACCENT}; font-weight: 700; }}
-    .tabtext-inactive {{ font-size: 12px; fill: {MUTED}; font-weight: 700; }}
     .barseg {{ font-size: {BAR_FONT}px; }}
     .cursor {{ fill: {TERTIARY}; animation: blink 1s steps(2, start) infinite; }}
     @keyframes blink {{ 50% {{ opacity: 0; }} }}
 
-    /* タイピング再生 (1回完結): ブロックが上からフェード+スライドインで
-       順番に出現する。prefers-reduced-motionでは分岐させない
-       (Vivaldi等、OS側の「モーションを減らす」設定が意図せずオンになっていると
-       それだけでアニメーションが再生されなくなってしまうため、常に再生する)。
-       その代わり、静的なopacity/clip-pathの宣言としては「常にフル表示」
-       (opacity:1 / clip-path:フル開放) だけを書き、非表示状態は
-       @keyframesの0%側にしか存在しないようにしている。こうすることで
-       librsvg等アニメーションを実行できないレンダラは単に静的な
-       opacity:1をそのまま使い、対応ブラウザだけがアニメーション通りに
-       0%から再生する(=静的レンダラでも真っ黒にならない)。 */
     .reveal {{
       opacity: 1;
-      animation: revealIn 0.5s ease-out both;
+      animation: revealIn 0.25s ease-out both;
     }}
-    /* コマンド文字列だけ、バーの出現から少し遅れて左→右にタイプされる演出。
-       等速だと不自然なので、バーストと一瞬の"打鍵の迷い"を混ぜた不均一な
-       キーフレームにし、animation-durationは文字数で個別に伸縮させている
-       (prompt_and_command/type_duration参照)。2種類のカーブ(typeline-b)を
-       コマンドごとに交互適用し、毎回同じリズムに見えないようにした。 */
     .typeline {{
       display: inline-block;
       clip-path: inset(0 0 0 0);
@@ -452,10 +426,9 @@ svg = f"""<svg width="{WIDTH}" height="{height}" viewBox="0 0 {WIDTH} {height}" 
     }}
     .typeline-b {{ animation-name: typeReveal2; }}
     @keyframes revealIn {{
-      from {{ opacity: 0; transform: translateY(5px); }}
+      from {{ opacity: 0; transform: translateY(2px); }}
       to   {{ opacity: 1; transform: translateY(0); }}
     }}
-    /* 序盤は勢いよく、途中で一瞬迷って止まり、後半また打ち切る緩急 */
     @keyframes typeReveal {{
       0%   {{ clip-path: inset(0 100% 0 0); }}
       22%  {{ clip-path: inset(0 74% 0 0); }}
@@ -465,7 +438,6 @@ svg = f"""<svg width="{WIDTH}" height="{height}" viewBox="0 0 {WIDTH} {height}" 
       74%  {{ clip-path: inset(0 16% 0 0); }}
       100% {{ clip-path: inset(0 0% 0 0); }}
     }}
-    /* variant B: 迷いのタイミングをずらした別カーブ */
     @keyframes typeReveal2 {{
       0%   {{ clip-path: inset(0 100% 0 0); }}
       12%  {{ clip-path: inset(0 88% 0 0); }}
@@ -474,16 +446,6 @@ svg = f"""<svg width="{WIDTH}" height="{height}" viewBox="0 0 {WIDTH} {height}" 
       62%  {{ clip-path: inset(0 30% 0 0); }}
       68%  {{ clip-path: inset(0 28% 0 0); }}
       100% {{ clip-path: inset(0 0% 0 0); }}
-    }}
-
-    /* 常時ループするスキャンライン(CRT風の走査線) */
-    .scanlines {{
-      mix-blend-mode: overlay;
-      animation: scanmove 5s linear infinite;
-    }}
-    @keyframes scanmove {{
-      from {{ transform: translateY(0); }}
-      to   {{ transform: translateY(4px); }}
     }}
   </style>
 
@@ -499,7 +461,6 @@ svg = f"""<svg width="{WIDTH}" height="{height}" viewBox="0 0 {WIDTH} {height}" 
 
   {"".join(reveal_svg)}
 
-  <rect x="0.75" y="{HEADER_H}" width="{WIDTH-1.5}" height="{height-HEADER_H-0.75}" fill="url(#scanlines)" class="scanlines" pointer-events="none"/>
   <rect x="0.75" y="0.75" width="{WIDTH-1.5}" height="{height-1.5}" rx="12" fill="url(#vignette)" pointer-events="none"/>
 </svg>
 """

@@ -1,55 +1,35 @@
-<svg width="900" height="482" viewBox="0 0 900 482" fill="none" xmlns="http://www.w3.org/2000/svg">
+<svg width="820" height="510" viewBox="0 0 820 510" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <pattern id="scanlines" width="100%" height="4" patternUnits="userSpaceOnUse">
-      <rect width="100%" height="2" fill="#000000" opacity="0.35"/>
-    </pattern>
     <radialGradient id="vignette" cx="50%" cy="42%" r="75%">
-      <stop offset="60%" stop-color="#000000" stop-opacity="0"/>
-      <stop offset="100%" stop-color="#000000" stop-opacity="0.35"/>
+      <stop offset="65%" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.22"/>
     </radialGradient>
   </defs>
   <style>
     text { font-family: "HackGen Console NF", "SFMono-Regular", "Cascadia Code", "Roboto Mono", Menlo, Consolas, monospace; }
     .bg { fill: #181616; }
     .border { stroke: #282727; stroke-width: 1.5; }
-    .mono { font-size: 14px; fill: #c5c9c5; }
+    .mono { font-size: 16px; fill: #c5c9c5; }
     .title { font-size: 16px; font-weight: 700; fill: #d7bde4; }
-    .cmdline { font-size: 14px; fill: #c5c9c5; }
-    .promptchar { fill: #bbc7db; font-size: 14px; }
-    .dim { font-size: 14px; fill: #737c73; }
-    .green { font-size: 14px; fill: #87a987; }
-    .yellow { font-size: 14px; fill: #c4b28a; }
-    .accent { font-size: 14px; fill: #a2c9fd; }
+    .cmdline { font-size: 16px; fill: #c5c9c5; }
+    .promptchar { fill: #bbc7db; font-size: 16px; }
+    .dim { font-size: 16px; fill: #737c73; }
+    .green { font-size: 16px; fill: #87a987; }
+    .yellow { font-size: 16px; fill: #c4b28a; }
+    .accent { font-size: 16px; fill: #a2c9fd; }
     .syn-func { fill: #8ba4b0; }
     .syn-storage { fill: #8992a7; }
     .syn-class { fill: #8ea4a2; }
     .syn-string { fill: #8a9a7b; }
     .syn-const { fill: #b6927b; }
-    .tabtext { font-size: 12px; fill: #111418; font-weight: 700; }
-    .tabtext-inactive { font-size: 12px; fill: #c3c6cf; font-weight: 700; }
-    .barseg { font-size: 10px; }
+    .barseg { font-size: 11px; }
     .cursor { fill: #d7bde4; animation: blink 1s steps(2, start) infinite; }
     @keyframes blink { 50% { opacity: 0; } }
 
-    /* タイピング再生 (1回完結): ブロックが上からフェード+スライドインで
-       順番に出現する。prefers-reduced-motionでは分岐させない
-       (Vivaldi等、OS側の「モーションを減らす」設定が意図せずオンになっていると
-       それだけでアニメーションが再生されなくなってしまうため、常に再生する)。
-       その代わり、静的なopacity/clip-pathの宣言としては「常にフル表示」
-       (opacity:1 / clip-path:フル開放) だけを書き、非表示状態は
-       @keyframesの0%側にしか存在しないようにしている。こうすることで
-       librsvg等アニメーションを実行できないレンダラは単に静的な
-       opacity:1をそのまま使い、対応ブラウザだけがアニメーション通りに
-       0%から再生する(=静的レンダラでも真っ黒にならない)。 */
     .reveal {
       opacity: 1;
-      animation: revealIn 0.5s ease-out both;
+      animation: revealIn 0.25s ease-out both;
     }
-    /* コマンド文字列だけ、バーの出現から少し遅れて左→右にタイプされる演出。
-       等速だと不自然なので、バーストと一瞬の"打鍵の迷い"を混ぜた不均一な
-       キーフレームにし、animation-durationは文字数で個別に伸縮させている
-       (prompt_and_command/type_duration参照)。2種類のカーブ(typeline-b)を
-       コマンドごとに交互適用し、毎回同じリズムに見えないようにした。 */
     .typeline {
       display: inline-block;
       clip-path: inset(0 0 0 0);
@@ -59,10 +39,9 @@
     }
     .typeline-b { animation-name: typeReveal2; }
     @keyframes revealIn {
-      from { opacity: 0; transform: translateY(5px); }
+      from { opacity: 0; transform: translateY(2px); }
       to   { opacity: 1; transform: translateY(0); }
     }
-    /* 序盤は勢いよく、途中で一瞬迷って止まり、後半また打ち切る緩急 */
     @keyframes typeReveal {
       0%   { clip-path: inset(0 100% 0 0); }
       22%  { clip-path: inset(0 74% 0 0); }
@@ -72,7 +51,6 @@
       74%  { clip-path: inset(0 16% 0 0); }
       100% { clip-path: inset(0 0% 0 0); }
     }
-    /* variant B: 迷いのタイミングをずらした別カーブ */
     @keyframes typeReveal2 {
       0%   { clip-path: inset(0 100% 0 0); }
       12%  { clip-path: inset(0 88% 0 0); }
@@ -82,30 +60,19 @@
       68%  { clip-path: inset(0 28% 0 0); }
       100% { clip-path: inset(0 0% 0 0); }
     }
-
-    /* 常時ループするスキャンライン(CRT風の走査線) */
-    .scanlines {
-      mix-blend-mode: overlay;
-      animation: scanmove 5s linear infinite;
-    }
-    @keyframes scanmove {
-      from { transform: translateY(0); }
-      to   { transform: translateY(4px); }
-    }
   </style>
 
-  <rect x="0.75" y="0.75" width="898.5" height="480.5" rx="12" class="bg border"/>
+  <rect x="0.75" y="0.75" width="818.5" height="508.5" rx="12" class="bg border"/>
 
-  <path d="M 0.75 12.75 Q 0.75 0.75 12.75 0.75 L 887.25 0.75 Q 899.25 0.75 899.25 12.75
-           L 899.25 26 L 0.75 26 Z" fill="#1d1c19"/>
-  <line x1="0.75" y1="26" x2="899.25" y2="26" stroke="#282727" stroke-width="1"/>
+  <path d="M 0.75 12.75 Q 0.75 0.75 12.75 0.75 L 807.25 0.75 Q 819.25 0.75 819.25 12.75
+           L 819.25 26 L 0.75 26 Z" fill="#1d1c19"/>
+  <line x1="0.75" y1="26" x2="819.25" y2="26" stroke="#282727" stroke-width="1"/>
 
   <circle cx="22" cy="13.0" r="4.5" fill="#c4746e"/>
   <circle cx="39" cy="13.0" r="4.5" fill="#c4b28a"/>
   <circle cx="56" cy="13.0" r="4.5" fill="#87a987"/>
 
-  <g class="reveal" style="animation-delay:0.25s"><rect x="34" y="48" width="108" height="15" fill="#a2c9fd"/><rect x="142" y="48" width="66" height="15" fill="#272a2f"/><polygon points="142,48 148,55.5 142,63" fill="#a2c9fd"/><polygon points="208,48 214,55.5 208,63" fill="#272a2f"/><text x="88.0" y="58.7" class="barseg" text-anchor="middle" fill="#111418" font-weight="bold"> ~/Naruto-Takahashi </text><g stroke="#a2c9fd" stroke-width="1.3" fill="none" stroke-linecap="round"><line x1="157" y1="52.5" x2="157" y2="58.5"/><path d="M 157 55.0 C 159.5 55.0 160.5 53.0 163 53.0"/></g><circle cx="157" cy="51.0" r="1.5" fill="#a2c9fd"/><circle cx="157" cy="60.0" r="1.5" fill="#a2c9fd"/><circle cx="163" cy="53.0" r="1.5" fill="#a2c9fd"/><text x="171" y="58.7" class="barseg" fill="#a2c9fd" font-weight="bold"> main </text><text x="34" y="85" class="cmdline"><tspan class="promptchar" font-weight="bold">&#10095;</tspan> <tspan class="typeline" style="animation-delay:0.37s;animation-duration:0.77s"><tspan class="syn-func">whoami</tspan></tspan></text></g><g class="reveal" style="animation-delay:1.29s"><text x="34" y="113" class="mono"><tspan x="34" class="syn-storage">Role</tspan><tspan x="158">AI &amp; Security Researcher / Systems Engineer</tspan></text><text x="34" y="137" class="mono"><tspan x="34" class="syn-storage">Affiliation</tspan><tspan x="158">Kyushu Univ. — Sakurai Laboratory</tspan></text><text x="34" y="161" class="mono"><tspan x="34" class="syn-storage">Interests</tspan><tspan x="158">LLM Security · AI Agents · Declarative Infra</tspan></text></g><g class="reveal" style="animation-delay:2.09s"><rect x="34" y="191" width="108" height="15" fill="#a2c9fd"/><rect x="142" y="191" width="66" height="15" fill="#272a2f"/><polygon points="142,191 148,198.5 142,206" fill="#a2c9fd"/><polygon points="208,191 214,198.5 208,206" fill="#272a2f"/><text x="88.0" y="201.7" class="barseg" text-anchor="middle" fill="#111418" font-weight="bold"> ~/Naruto-Takahashi </text><g stroke="#a2c9fd" stroke-width="1.3" fill="none" stroke-linecap="round"><line x1="157" y1="195.5" x2="157" y2="201.5"/><path d="M 157 198.0 C 159.5 198.0 160.5 196.0 163 196.0"/></g><circle cx="157" cy="194.0" r="1.5" fill="#a2c9fd"/><circle cx="157" cy="203.0" r="1.5" fill="#a2c9fd"/><circle cx="163" cy="196.0" r="1.5" fill="#a2c9fd"/><text x="171" y="201.7" class="barseg" fill="#a2c9fd" font-weight="bold"> main </text><text x="34" y="228" class="cmdline"><tspan class="promptchar" font-weight="bold">&#10095;</tspan> <tspan class="typeline typeline-b" style="animation-delay:2.21s;animation-duration:1.13s"><tspan class="syn-func">focus</tspan> <tspan class="syn-storage">--active</tspan></tspan></text></g><g class="reveal" style="animation-delay:3.49s"><text x="34" y="256" class="mono"><tspan x="34" class="green">[RESEARCH]</tspan><tspan x="149">Human-Computable Passwords × LLM Evaluation</tspan></text><text x="34" y="280" class="mono"><tspan x="34" class="yellow">[SOLVE]</tspan><tspan x="149">APOR.IA (Fukuoka Mitou Solve)</tspan></text><text x="34" y="304" class="mono"><tspan x="34" class="accent">[DEV]</tspan><tspan x="149">Python RPC Broker · AI Agent Automation</tspan></text></g><g class="reveal" style="animation-delay:4.29s"><rect x="34" y="334" width="108" height="15" fill="#a2c9fd"/><rect x="142" y="334" width="66" height="15" fill="#272a2f"/><polygon points="142,334 148,341.5 142,349" fill="#a2c9fd"/><polygon points="208,334 214,341.5 208,349" fill="#272a2f"/><text x="88.0" y="344.7" class="barseg" text-anchor="middle" fill="#111418" font-weight="bold"> ~/Naruto-Takahashi </text><g stroke="#a2c9fd" stroke-width="1.3" fill="none" stroke-linecap="round"><line x1="157" y1="338.5" x2="157" y2="344.5"/><path d="M 157 341.0 C 159.5 341.0 160.5 339.0 163 339.0"/></g><circle cx="157" cy="337.0" r="1.5" fill="#a2c9fd"/><circle cx="157" cy="346.0" r="1.5" fill="#a2c9fd"/><circle cx="163" cy="339.0" r="1.5" fill="#a2c9fd"/><text x="171" y="344.7" class="barseg" fill="#a2c9fd" font-weight="bold"> main </text><text x="34" y="371" class="cmdline"><tspan class="promptchar" font-weight="bold">&#10095;</tspan> <tspan class="typeline" style="animation-delay:4.41s;animation-duration:1.04s"><tspan class="syn-func">stack</tspan> <tspan class="syn-storage">--core</tspan></tspan></text></g><g class="reveal" style="animation-delay:5.60s"><text x="34" y="399" class="mono"><tspan class="syn-func">Python</tspan><tspan class="dim"> · </tspan><tspan class="syn-storage">C / C++</tspan><tspan class="dim"> · </tspan><tspan class="syn-class">Nix</tspan><tspan class="dim"> · </tspan><tspan class="syn-const">TypeScript</tspan><tspan class="dim"> · </tspan><tspan class="syn-func">Neovim</tspan></text></g><g class="reveal" style="animation-delay:6.40s"><rect x="34" y="425" width="108" height="15" fill="#a2c9fd"/><rect x="142" y="425" width="66" height="15" fill="#272a2f"/><polygon points="142,425 148,432.5 142,440" fill="#a2c9fd"/><polygon points="208,425 214,432.5 208,440" fill="#272a2f"/><text x="88.0" y="435.7" class="barseg" text-anchor="middle" fill="#111418" font-weight="bold"> ~/Naruto-Takahashi </text><g stroke="#a2c9fd" stroke-width="1.3" fill="none" stroke-linecap="round"><line x1="157" y1="429.5" x2="157" y2="435.5"/><path d="M 157 432.0 C 159.5 432.0 160.5 430.0 163 430.0"/></g><circle cx="157" cy="428.0" r="1.5" fill="#a2c9fd"/><circle cx="157" cy="437.0" r="1.5" fill="#a2c9fd"/><circle cx="163" cy="430.0" r="1.5" fill="#a2c9fd"/><text x="171" y="435.7" class="barseg" fill="#a2c9fd" font-weight="bold"> main </text><text x="34" y="462" class="promptchar" font-weight="bold">&#10095;</text><rect x="48" y="451" width="6" height="13" rx="1" class="cursor"/></g>
+  <g class="reveal" style="animation-delay:0.25s"><rect x="32" y="48" width="120" height="18" fill="#a2c9fd"/><rect x="152" y="48" width="71" height="18" fill="#272a2f"/><polygon points="152,48 158,57.0 152,66" fill="#a2c9fd"/><polygon points="223,48 229,57.0 223,66" fill="#272a2f"/><text x="92.0" y="60.2" class="barseg" text-anchor="middle" fill="#111418" font-weight="bold"> ~/Naruto-Takahashi </text><g stroke="#a2c9fd" stroke-width="1.3" fill="none" stroke-linecap="round"><line x1="168" y1="54.0" x2="168" y2="60.0"/><path d="M 168 56.5 C 170.5 56.5 171.5 54.5 174 54.5"/></g><circle cx="168" cy="52.5" r="1.5" fill="#a2c9fd"/><circle cx="168" cy="61.5" r="1.5" fill="#a2c9fd"/><circle cx="174" cy="54.5" r="1.5" fill="#a2c9fd"/><text x="181" y="60.2" class="barseg" fill="#a2c9fd" font-weight="bold"> main </text><text x="32" y="90" class="cmdline"><tspan class="promptchar" font-weight="bold">&#10095;</tspan> <tspan class="typeline" style="animation-delay:0.31s;animation-duration:0.37s"><tspan class="syn-func">whoami</tspan></tspan></text></g><g class="reveal" style="animation-delay:0.76s"><text x="32" y="118" class="mono"><tspan x="32" class="syn-storage">Role</tspan><tspan x="171">AI &amp; Security Researcher / Systems Engineer</tspan></text><text x="32" y="144" class="mono"><tspan x="32" class="syn-storage">Affiliation</tspan><tspan x="171">Kyushu Univ. — Sakurai Laboratory</tspan></text><text x="32" y="170" class="mono"><tspan x="32" class="syn-storage">Interests</tspan><tspan x="171">LLM Security · AI Agents · Declarative Infra</tspan></text></g><g class="reveal" style="animation-delay:1.15s"><rect x="32" y="200" width="120" height="18" fill="#a2c9fd"/><rect x="152" y="200" width="71" height="18" fill="#272a2f"/><polygon points="152,200 158,209.0 152,218" fill="#a2c9fd"/><polygon points="223,200 229,209.0 223,218" fill="#272a2f"/><text x="92.0" y="212.2" class="barseg" text-anchor="middle" fill="#111418" font-weight="bold"> ~/Naruto-Takahashi </text><g stroke="#a2c9fd" stroke-width="1.3" fill="none" stroke-linecap="round"><line x1="168" y1="206.0" x2="168" y2="212.0"/><path d="M 168 208.5 C 170.5 208.5 171.5 206.5 174 206.5"/></g><circle cx="168" cy="204.5" r="1.5" fill="#a2c9fd"/><circle cx="168" cy="213.5" r="1.5" fill="#a2c9fd"/><circle cx="174" cy="206.5" r="1.5" fill="#a2c9fd"/><text x="181" y="212.2" class="barseg" fill="#a2c9fd" font-weight="bold"> main </text><text x="32" y="242" class="cmdline"><tspan class="promptchar" font-weight="bold">&#10095;</tspan> <tspan class="typeline typeline-b" style="animation-delay:1.21s;animation-duration:0.55s"><tspan class="syn-func">focus</tspan> <tspan class="syn-storage">--active</tspan></tspan></text></g><g class="reveal" style="animation-delay:1.84s"><text x="32" y="270" class="mono"><tspan x="32" class="green">[RESEARCH]</tspan><tspan x="160">Human-Computable Passwords × LLM Evaluation</tspan></text><text x="32" y="296" class="mono"><tspan x="32" class="yellow">[SOLVE]</tspan><tspan x="160">APOR.IA (Fukuoka Mitou Solve)</tspan></text><text x="32" y="322" class="mono"><tspan x="32" class="accent">[DEV]</tspan><tspan x="160">Python RPC Broker · AI Agent Automation</tspan></text></g><g class="reveal" style="animation-delay:2.23s"><rect x="32" y="352" width="120" height="18" fill="#a2c9fd"/><rect x="152" y="352" width="71" height="18" fill="#272a2f"/><polygon points="152,352 158,361.0 152,370" fill="#a2c9fd"/><polygon points="223,352 229,361.0 223,370" fill="#272a2f"/><text x="92.0" y="364.2" class="barseg" text-anchor="middle" fill="#111418" font-weight="bold"> ~/Naruto-Takahashi </text><g stroke="#a2c9fd" stroke-width="1.3" fill="none" stroke-linecap="round"><line x1="168" y1="358.0" x2="168" y2="364.0"/><path d="M 168 360.5 C 170.5 360.5 171.5 358.5 174 358.5"/></g><circle cx="168" cy="356.5" r="1.5" fill="#a2c9fd"/><circle cx="168" cy="365.5" r="1.5" fill="#a2c9fd"/><circle cx="174" cy="358.5" r="1.5" fill="#a2c9fd"/><text x="181" y="364.2" class="barseg" fill="#a2c9fd" font-weight="bold"> main </text><text x="32" y="394" class="cmdline"><tspan class="promptchar" font-weight="bold">&#10095;</tspan> <tspan class="typeline" style="animation-delay:2.29s;animation-duration:0.50s"><tspan class="syn-func">stack</tspan> <tspan class="syn-storage">--core</tspan></tspan></text></g><g class="reveal" style="animation-delay:2.87s"><text x="32" y="422" class="mono"><tspan class="syn-func">Python</tspan><tspan class="dim"> · </tspan><tspan class="syn-storage">C / C++</tspan><tspan class="dim"> · </tspan><tspan class="syn-class">Nix</tspan><tspan class="dim"> · </tspan><tspan class="syn-const">TypeScript</tspan><tspan class="dim"> · </tspan><tspan class="syn-func">Neovim</tspan></text></g><g class="reveal" style="animation-delay:3.26s"><rect x="32" y="448" width="120" height="18" fill="#a2c9fd"/><rect x="152" y="448" width="71" height="18" fill="#272a2f"/><polygon points="152,448 158,457.0 152,466" fill="#a2c9fd"/><polygon points="223,448 229,457.0 223,466" fill="#272a2f"/><text x="92.0" y="460.2" class="barseg" text-anchor="middle" fill="#111418" font-weight="bold"> ~/Naruto-Takahashi </text><g stroke="#a2c9fd" stroke-width="1.3" fill="none" stroke-linecap="round"><line x1="168" y1="454.0" x2="168" y2="460.0"/><path d="M 168 456.5 C 170.5 456.5 171.5 454.5 174 454.5"/></g><circle cx="168" cy="452.5" r="1.5" fill="#a2c9fd"/><circle cx="168" cy="461.5" r="1.5" fill="#a2c9fd"/><circle cx="174" cy="454.5" r="1.5" fill="#a2c9fd"/><text x="181" y="460.2" class="barseg" fill="#a2c9fd" font-weight="bold"> main </text><text x="32" y="490" class="promptchar" font-weight="bold">&#10095;</text><rect x="46" y="479" width="6" height="13" rx="1" class="cursor"/></g>
 
-  <rect x="0.75" y="26" width="898.5" height="455.25" fill="url(#scanlines)" class="scanlines" pointer-events="none"/>
-  <rect x="0.75" y="0.75" width="898.5" height="480.5" rx="12" fill="url(#vignette)" pointer-events="none"/>
+  <rect x="0.75" y="0.75" width="818.5" height="508.5" rx="12" fill="url(#vignette)" pointer-events="none"/>
 </svg>
